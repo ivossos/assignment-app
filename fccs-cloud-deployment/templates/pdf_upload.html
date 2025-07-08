@@ -586,8 +586,8 @@
 
                     // Store file info before clearing selectedFile
                     const fileInfo = {
-                        name: selectedFile?.name || 'Unknown File',
-                        size: selectedFile?.size || 0
+                        name: (selectedFile && selectedFile.name) ? selectedFile.name : 'Unknown File',
+                        size: (selectedFile && selectedFile.size) ? selectedFile.size : 0
                     };
 
                     // Reset form immediately to prevent race conditions
