@@ -964,3 +964,17 @@ class AgentRouter:
             }
             for name, agent in self.agents.items()
         }
+
+class CrewAIRouter(AgentRouter):
+    """Compatibility wrapper for main.py"""
+    
+    def route_query(self, question: str) -> str:
+        """Route query and return result string for main.py compatibility"""
+        try:
+            result = super().route_query(question)
+            if result.get('success'):
+                return result.get('result', '')
+            else:
+                return f"Error: {result.get('error', 'Unknown error')}"
+        except Exception as e:
+            return f"Error: {str(e)}"
