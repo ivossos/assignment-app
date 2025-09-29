@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clean API Test Interface</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e9ecef;
+        }
+        .panel h2 {
+            color: #495057;
+            margin-bottom: 20px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        .panel h2 i {
+            margin-right: 10px;
+            color: #007bff;
+        }
+        .dropdown-container {
+            margin-bottom: 20px;
+        }
+        .dropdown {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+        .dropdown:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .curl-output {
+            background: #1e1e1e;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            min-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .query-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            resize: vertical;
+            min-height: 80px;
+        }
+        .query-input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        .btn-block {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .result-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 200px;
+            font-family: monospace;
+            font-size: 13px;
+            overflow-y: auto;
+        }
+        .loading {
+            color: #007bff;
+            text-align: center;
+            padding: 20px;
+        }
+        .success {
+            color: #28a745;
+            background: #d4f5d4;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #495057;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .curl-container {
+            position: relative;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-flask"></i> Clean API Test Interface</h1>
+        <p>CURL Commands on Left • API Testing on Right • 12 Required Queries</p>
+    </div>
+
+    <div class="main-container">
+        <!-- LEFT PANEL: CURL GENERATION -->
+        <div class="panel">
+            <h2><i class="fas fa-terminal"></i> CURL Command Generator</h2>
+
+            <div class="dropdown-container">
+                <label for="querySelect"><strong>Select Test Query (12 Required):</strong></label>
+                <select id="querySelect" class="dropdown" onchange="selectQuery()">
+                    <option value="">-- Choose a test query --</option>
+                    <option value="How to prepare dark chocolate almond bars?">1. How to prepare dark chocolate almond bars?</option>
+                    <option value="What are almonds rich in?">2. What are almonds rich in?</option>
+                    <option value="I have maple syrup with me. What can I do?">3. I have maple syrup with me. What can I do?</option>
+                    <option value="How long can I store chocolate mousse pie?">4. How long can I store chocolate mousse pie?</option>
+                    <option value="What are the healthy food tips?">5. What are the healthy food tips?</option>
+                    <option value="What should be the amount of water consumed per day?">6. What should be the amount of water consumed per day?</option>
+                    <option value="What are the food items rich in vitamin C?">7. What are the food items rich in vitamin C?</option>
+                    <option value="What are the vegan recipes that I can prepare?">8. What are the vegan recipes that I can prepare?</option>
+                    <option value="Which recipes require coconut whipped cream?">9. Which recipes require coconut whipped cream?</option>
+                    <option value="What are the ingredients required to prepare banana bread?">10. What are the ingredients required to prepare banana bread?</option>
+                    <option value="What are the calories of oats?">11. What are the calories of oats?</option>
+                    <option value="How much time should I bake for perfect chocolate chip cookies?">12. How much time should I bake for perfect chocolate chip cookies?</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary btn-block" onclick="generateCurl()">
+                <i class="fas fa-code"></i> Generate CURL Command
+            </button>
+
+            <div class="curl-container">
+                <button class="copy-btn" onclick="copyCurl()"><i class="fas fa-copy"></i> Copy</button>
+                <div id="curlOutput" class="curl-output">
+# Select a query above to generate CURL command
+# The command will appear here for copy/paste
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: API TESTING -->
+        <div class="panel">
+            <h2><i class="fas fa-play-circle"></i> API Testing & Execution</h2>
+
+            <label for="testQuery"><strong>Current Query:</strong></label>
+            <textarea id="testQuery" class="query-input" placeholder="Query will auto-fill when you select from dropdown...">How to prepare dark chocolate almond bars?</textarea>
+
+            <button class="btn btn-success btn-block" onclick="executeTest()">
+                <i class="fas fa-rocket"></i> EXECUTE API TEST
+            </button>
+
+            <button class="btn btn-secondary" onclick="clearResults()">
+                <i class="fas fa-trash"></i> Clear Results
+            </button>
+
+            <div id="results" class="result-area">
+                <div style="text-align: center; color: #6c757d; padding: 20px;">
+                    <i class="fas fa-info-circle"></i><br>
+                    Results will appear here after executing tests
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentQuery = '';
+
+        function selectQuery() {
+            const select = document.getElementById('querySelect');
+            const query = select.value;
+
+            if (query) {
+                currentQuery = query;
+                document.getElementById('testQuery').value = query;
+                logResult(`✅ Selected: ${query}`, 'success');
+
+                // Auto-generate CURL command
+                generateCurl();
+            }
+        }
+
+        function generateCurl() {
+            const query = document.getElementById('testQuery').value || currentQuery;
+
+            if (!query.trim()) {
+                logResult('❌ Please select a query first!', 'error');
+                return;
+            }
+
+            const curlCommand = `curl -X POST "http://127.0.0.1:8080/api/test-search" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "${query.replace(/"/g, '\\"')}"
+  }'
+
+# Direct Kore.ai API call:
+curl -X POST "https://platform.kore.ai/api/public/bot/st-b20b30fd-b75c-51cf-b95a-df9477562144/search/v2/advanced-search?AppID=st-b20b30fd-b75c-51cf-b95a-df9477562144" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: application/json" \\
+  -H "auth: YOUR_JWT_TOKEN" \\
+  -d '{
+    "query": "${query.replace(/"/g, '\\"')}",
+    "answerSearch": true,
+    "searchResults": true,
+    "isFacetsEnable": true,
+    "includeChunksInResponse": true
+  }'`;
+
+            document.getElementById('curlOutput').textContent = curlCommand;
+            logResult('✅ CURL command generated successfully!', 'success');
+        }
+
+        function executeTest() {
+            const query = document.getElementById('testQuery').value;
+
+            if (!query.trim()) {
+                logResult('❌ Please enter a query to test!', 'error');
+                return;
+            }
+
+            logResult('⏳ Executing API test...', 'loading');
+
+            const startTime = Date.now();
+
+            fetch('/api/test-search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    query: query
+                })
+            })
+            .then(response => {
+                const elapsed = Date.now() - startTime;
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const elapsed = Date.now() - startTime;
+
+                if (data.success) {
+                    const result = `✅ API SUCCESS (${elapsed}ms)
+
+Query: "${query}"
+
+📊 RESULTS:
+• Answer: ${data.analysis.answer_text}
+• Search Results: ${data.analysis.search_results_count} found
+• Knowledge Chunks: ${data.analysis.chunks_count} processed
+• Response Keys: ${data.analysis.response_keys.join(', ')}
+
+🔧 TECHNICAL:
+• App ID: ${data.app_id}
+• Auth Method: ${data.auth_method}
+• Status: Success
+
+🎯 ANALYSIS:
+• Has Answer: ${data.analysis.has_answer ? 'Yes' : 'No'}
+• Has Search Results: ${data.analysis.has_search_results ? 'Yes' : 'No'}
+• Has Chunks: ${data.analysis.has_chunks ? 'Yes' : 'No'}
+• Empty Response: ${data.analysis.is_empty_response ? 'Yes' : 'No'}`;
+
+                    logResult(result, 'success');
+                } else {
+                    logResult(`❌ API ERROR: ${data.error || 'Unknown error'}`, 'error');
+                }
+            })
+            .catch(error => {
+                const elapsed = Date.now() - startTime;
+                logResult(`❌ REQUEST FAILED (${elapsed}ms): ${error.message}`, 'error');
+            });
+        }
+
+        function copyCurl() {
+            const curlText = document.getElementById('curlOutput').textContent;
+
+            if (!curlText || curlText.includes('Select a query')) {
+                logResult('❌ No CURL command to copy. Generate one first!', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(curlText).then(() => {
+                logResult('✅ CURL command copied to clipboard!', 'success');
+
+                // Visual feedback
+                const btn = document.querySelector('.copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.background = '#28a745';
+
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.style.background = '#495057';
+                }, 2000);
+            }).catch(() => {
+                logResult('❌ Failed to copy to clipboard', 'error');
+            });
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = `
+                <div style="text-align: center; color: #6c757d; padding: 20px;">
+                    <i class="fas fa-info-circle"></i><br>
+                    Results cleared - ready for new tests
+                </div>
+            `;
+        }
+
+        function logResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+
+            let className = '';
+            if (type === 'success') className = 'success';
+            if (type === 'error') className = 'error';
+            if (type === 'loading') className = 'loading';
+
+            if (type === 'loading') {
+                results.innerHTML = `<div class="${className}">${message}</div>`;
+            } else {
+                results.innerHTML = `<div class="${className}"><pre>[${timestamp}] ${message}</pre></div>`;
+            }
+
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            logResult('🚀 Clean API Test Interface loaded successfully!', 'success');
+            logResult('💡 Select a query from the dropdown to start testing', 'info');
+        });
+    </script>
+</body>
+</html>
