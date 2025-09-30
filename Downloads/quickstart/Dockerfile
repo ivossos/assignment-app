@@ -1,30 +1,63 @@
-# Usar Python oficial como imagem base
-FROM python:3.11-slim
+# Multi-stage build for optimized production image
+FROM python:3.11-slim as builder
 
-# Definir diretório de trabalho
-WORKDIR /app
-
-# Instalar dependências do sistema necessárias
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copiar requirements primeiro para cache de layers
-COPY requirements.txt .
+# Create and activate virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
-# Instalar dependências Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy requirements first for better layer caching
+COPY requirements*.txt ./
 
-# Copiar código da aplicação
-COPY . .
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Criar usuário não-root para segurança
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
+# Production stage
+FROM python:3.11-slim as production
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN groupadd -r appgroup && useradd -r -g appgroup -u 1000 appuser
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs /app/static /app/templates && \
+    chown -R appuser:appgroup /app
+
+# Copy application code
+COPY --chown=appuser:appgroup . .
+
+# Switch to non-root user
 USER appuser
 
-# Expor porta padrão do Cloud Run
-EXPOSE 8080
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-5001}/health || exit 1
 
-# Comando para iniciar a aplicação com Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--timeout", "120", "--worker-class", "eventlet", "main:app"]
+# Environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PORT=5001
+
+# Expose port
+EXPOSE $PORT
+
+# Start command with proper signal handling
+CMD ["python", "-u", "main.py"]

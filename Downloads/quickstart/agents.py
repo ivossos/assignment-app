@@ -285,7 +285,7 @@ class SpecializedAgent:
                     {"role": "user", "content": message}
                 ],
                 # temperature=0.7,  # GPT-5 doesn't support custom temperature values
-                max_completion_tokens=600
+                max_completion_tokens=1200
             )
 
             agent_response = response.choices[0].message.content

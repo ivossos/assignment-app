@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from openai import OpenAI
+from elevenlabs import ElevenLabs
 from flask_sock import Sock
 import asyncio
 import os
@@ -14,12 +15,22 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# ElevenLabs TTS configuration
+ELEVEN_API_KEY = os.getenv("ELEVEN_LABS_API_KEY")
+if not ELEVEN_API_KEY:
+    raise RuntimeError("Missing ELEVEN_LABS_API_KEY environment variable")
+ELEVEN_DEFAULT_VOICE_ID = os.getenv("ELEVEN_LABS_VOICE_ID")
+eleven_client = ElevenLabs(api_key=ELEVEN_API_KEY)
 from agents import AgentFactory, SpecializedAgent
 from voice_handler import VoiceCallHandler, RealTimeVoiceHandler
 from twilio_integration import TwilioCallHandler, WebRTCHandler
 from crm_integration import CRMManager
 from knowledge_base import KnowledgeBaseManager
 from ticketing_integration import TicketingManager
+# from agent_memory import AgentMemoryManager, AgentMemoryHelper  # Temporarily disabled
+from metrics_system import MetricsCollector, AgentMetricsWrapper
+from voice_to_ticket_flow import VoiceToTicketFlow
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -121,7 +132,18 @@ class CallCenterAgentSystem:
         self.crm_manager = CRMManager()
         self.knowledge_base = KnowledgeBaseManager()
         self.ticketing_manager = TicketingManager()
+        # self.agent_memory_manager = AgentMemoryManager("agent_memory.db")  # Temporarily disabled
+
+        # Initialize metrics system
+        self.metrics_collector = MetricsCollector()
+        self.metrics_wrapper = AgentMetricsWrapper(self.metrics_collector)
+
         self.agents = self._create_agent_network()
+        # Load voice IDs for each agent from environment, fallback to default
+        self.agent_voice_ids = {}
+        for key in self.agents.keys():
+            env_var = f"ELEVEN_LABS_VOICE_ID_{key.upper()}"
+            self.agent_voice_ids[key] = os.getenv(env_var, ELEVEN_DEFAULT_VOICE_ID)
         self.voice_handler = VoiceCallHandler(self)
         self.twilio_handler = TwilioCallHandler(self)
         self.webrtc_handler = WebRTCHandler(self)
@@ -142,7 +164,7 @@ class CallCenterAgentSystem:
         )
 
     async def handle_conversation(self, session_id: str, user_input: str, phone_number: str = None) -> Dict[str, Any]:
-        """Main conversation handler supporting multiple agent interactions."""
+        """Main conversation handler supporting multiple agent interactions with persistent memory."""
 
         try:
             # Get session context
@@ -150,21 +172,52 @@ class CallCenterAgentSystem:
             current_agent_name = session_context.get('current_agent', 'triage')
             context = session_context.get('context', {})
 
+            # Agent memory system temporarily disabled
+            # memory_helper = AgentMemoryHelper(self.agent_memory_manager, session_id, current_agent_name)
+            # agent_memories = memory_helper.recall_all()
+            # context.update(agent_memories)
+            # memory_history = memory_helper.get_history(limit=10)
+            # context['persistent_history'] = memory_history
+            agent_memories = {}
+
             # Add user input to context
             context['phone_number'] = phone_number
             context['last_user_input'] = user_input
             context['conversation_history'] = context.get('conversation_history', [])
+            # context['memory_helper'] = memory_helper  # Disabled
 
             # Get current agent
             current_agent = self.agents.get(current_agent_name, self.agents['triage'])
 
+            # Memory storage temporarily disabled
+            # if phone_number and 'customer_phone' not in agent_memories:
+            #     memory_helper.remember('customer_phone', phone_number, 'customer_info')
+
+            # Start metrics tracking
+            self.metrics_collector.start_session(session_id, current_agent_name, phone_number)
+            self.metrics_wrapper.start_agent_call(current_agent_name, session_id, user_input)
+
             # Process message with current agent
             result = await current_agent.process_message(user_input, context)
+
+            # End metrics tracking
+            accuracy_score = self._calculate_accuracy_score(result)
+            resolved = result.get('resolved', False)
+            self.metrics_wrapper.end_agent_call(
+                current_agent_name, session_id, result['response'],
+                accuracy_score, resolved
+            )
 
             # Handle agent handoff if needed
             if result.get('handoff_needed') and result.get('target_agent') in self.agents:
                 new_agent_name = result['target_agent']
                 new_agent = self.agents[new_agent_name]
+
+                # Track escalation
+                self.metrics_collector.track_escalation(
+                    session_id, current_agent_name, new_agent_name,
+                    result.get('reason', 'Specialized assistance needed')
+                )
 
                 # Create handoff message
                 handoff_message = f"I'm transferring you to our {new_agent.role} for better assistance with your inquiry."
@@ -174,7 +227,18 @@ class CallCenterAgentSystem:
                 handoff_context['handoff_reason'] = result.get('reason', 'Specialized assistance needed')
                 handoff_context['previous_agent'] = current_agent_name
 
+                # Start tracking new agent
+                self.metrics_wrapper.start_agent_call(new_agent_name, session_id, user_input)
+
                 new_result = await new_agent.process_message(user_input, handoff_context)
+
+                # End tracking new agent
+                new_accuracy = self._calculate_accuracy_score(new_result)
+                new_resolved = new_result.get('resolved', False)
+                self.metrics_wrapper.end_agent_call(
+                    new_agent_name, session_id, new_result['response'],
+                    new_accuracy, new_resolved
+                )
 
                 # Update context and result
                 current_agent_name = new_agent_name
@@ -194,11 +258,15 @@ class CallCenterAgentSystem:
             if len(context['conversation_history']) > 10:
                 context['conversation_history'] = context['conversation_history'][-10:]
 
-            # Save conversation
+            # Save conversation in both systems
             self.conversation_manager.save_conversation(
                 session_id, user_input, result['response'],
                 current_agent_name, context
             )
+
+            # Agent memory logging temporarily disabled
+            # memory_helper.log_conversation(user_input, result['response'])
+            # self._extract_and_store_memories(memory_helper, user_input, result, context)
 
             return {
                 'session_id': session_id,
@@ -211,7 +279,40 @@ class CallCenterAgentSystem:
 
         except Exception as e:
             logger.error(f"Conversation handling error: {str(e)}")
+
+            # Track error in metrics
+            if hasattr(self, 'metrics_collector'):
+                self.metrics_collector.track_error(
+                    current_agent_name, "system_error", session_id,
+                    error_details=str(e)
+                )
+
             return await self._handle_error(session_id, str(e), user_input)
+
+    def _calculate_accuracy_score(self, result: Dict[str, Any]) -> float:
+        """Calculate accuracy score based on result quality."""
+        base_score = 0.8  # Base score for successful response
+
+        # Add points for specific indicators
+        if result.get('confidence', 0) > 0.9:
+            base_score += 0.1
+
+        if result.get('resolved', False):
+            base_score += 0.1
+
+        if result.get('handoff_needed'):
+            base_score -= 0.1  # Slight penalty for needing handoff
+
+        if len(result.get('response', '')) < 20:
+            base_score -= 0.2  # Penalty for very short responses
+
+        # Cap between 0.1 and 1.0
+        return max(0.1, min(1.0, base_score))
+
+    # def _extract_and_store_memories(self, memory_helper, user_input: str, result: Dict[str, Any], context: Dict[str, Any]):
+    #     """Extract and store important information from conversation in agent memory."""
+    #     # Temporarily disabled until SQL syntax is fixed
+    #     pass
 
     async def _handle_error(self, session_id: str, error: str, user_input: str) -> Dict[str, Any]:
         """Handle system errors gracefully."""
@@ -254,13 +355,58 @@ async def handle_chat():
         )
 
         return jsonify(result)
-
     except Exception as e:
         logger.error(f"Chat endpoint error: {str(e)}")
         return jsonify({
             'error': 'Internal server error',
             'status': 'error'
         }), 500
+@app.route('/api/voices', methods=['GET'])
+def list_voices():
+    """List available ElevenLabs voices."""
+    try:
+        resp = eleven_client.voices.get_all()
+        return jsonify([{"name": v.name, "voice_id": v.voice_id} for v in resp.voices])
+    except Exception as e:
+        logger.error(f"Failed to list voices: {e}")
+        return jsonify({"error": "Failed to retrieve voices"}), 500
+
+@app.route('/api/tts', methods=['POST'])
+def tts():
+    """Stream TTS audio for given text and agent."""
+    data = request.get_json() or request.form
+    text = data.get("text", "").strip()
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+
+    # Determine voice ID based on agent or provided voice_id
+    agent_key = data.get("agent")
+    if agent_key and agent_key in call_center.agent_voice_ids:
+        voice_id = call_center.agent_voice_ids[agent_key]
+    else:
+        voice_id = data.get("voice_id") or ELEVEN_DEFAULT_VOICE_ID
+
+    if not voice_id:
+        return jsonify({"error": "No voice_id provided"}), 400
+
+    model_id = data.get("model") or "eleven_monolingual_v1"
+    output_format = data.get("output_format") or "mp3_44100_128"
+
+    try:
+        audio_stream = eleven_client.text_to_speech.convert(
+            voice_id=voice_id,
+            text=text,
+            model_id=model_id,
+            output_format=output_format,
+        )
+        return Response(
+            audio_stream,
+            mimetype="audio/mpeg",
+            headers={"Content-Disposition": f"inline; filename=tts_{voice_id}.mp3"},
+        )
+    except Exception as e:
+        logger.error(f"TTS generation failed: {e}")
+        return jsonify({"error": "TTS generation failed"}), 500
 
 @app.route('/api/session/<session_id>/history', methods=['GET'])
 def get_conversation_history(session_id):
@@ -297,12 +443,14 @@ def get_conversation_history(session_id):
             'status': 'error'
         }), 500
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint."""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
+        'version': '1.0.0',
+        'environment': os.getenv('ENVIRONMENT', 'development'),
         'agents_available': list(call_center.agents.keys())
     })
 
@@ -530,6 +678,64 @@ def get_active_voice_calls():
             'error': 'Failed to get active calls status'
         }), 500
 
+# Voice-to-Ticket Flow Endpoint
+@app.route('/api/voice-to-ticket', methods=['POST'])
+def process_voice_to_ticket():
+    """Process voice-to-ticket flow with CPF validation and ticket creation."""
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+
+        cpf = data.get('cpf')
+        transcricao = data.get('transcricao', data.get('message', ''))
+        arquivo_audio = data.get('arquivo_audio')
+
+        if not cpf:
+            return jsonify({
+                'success': False,
+                'error': 'CPF is required'
+            }), 400
+
+        if not transcricao:
+            return jsonify({
+                'success': False,
+                'error': 'Transcricao/message is required'
+            }), 400
+
+        # Initialize Voice-to-Ticket flow
+        flow = VoiceToTicketFlow()
+
+        # Process the flow
+        resultado = flow.processar_fluxo_voice_to_ticket(
+            cpf=cpf,
+            transcricao=transcricao,
+            arquivo_audio=arquivo_audio
+        )
+
+        # Generate report
+        relatorio = flow.gerar_relatorio_fluxo(resultado)
+
+        logger.info(f"Voice-to-Ticket processed for CPF: {cpf[:3]}***")
+
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'resultado': resultado,
+            'relatorio': relatorio
+        })
+
+    except Exception as e:
+        logger.error(f"Voice-to-Ticket error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': f'Voice-to-Ticket processing failed: {str(e)}'
+        }), 500
+
 # Enterprise Integration Endpoints
 @app.route('/api/crm/customer', methods=['GET'])
 async def get_customer_data():
@@ -582,8 +788,11 @@ def ws_voice(ws, session_id):
             handler._gui_sockets.add(ws)
 
             try:
+                # Loop to receive messages from browser without blocking the event loop
                 while True:
-                    msg = ws.receive()
+                    # Run blocking ws.receive() in executor to allow concurrent tasks
+                    event_loop = asyncio.get_event_loop()
+                    msg = await event_loop.run_in_executor(None, ws.receive)
                     if msg is None:
                         break
                     # Binary audio chunk from client
@@ -614,6 +823,17 @@ def ws_voice(ws, session_id):
             except:
                 pass
         finally:
+            # Cancel any remaining tasks (e.g., RealTimeVoiceHandler listener)
+            try:
+                pending = asyncio.all_tasks()
+                for task in pending:
+                    if not task.done():
+                        task.cancel()
+                # Wait for cancelled tasks to finish
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            except Exception:
+                pass
+            # Close the event loop
             loop.close()
 
     # Create a thread to handle the async operations
@@ -631,6 +851,26 @@ def gui_demo():
 def chatbot():
     """Render the chatbot interface."""
     return render_template('chatbot.html')
+
+@app.route('/team-intro', methods=['GET'])
+def team_intro():
+    """Render the team introduction page."""
+    return render_template('team_intro.html')
+
+@app.route('/client-demo', methods=['GET'])
+def client_demo():
+    """Simple client presentation demo."""
+    return render_template('client_demo.html')
+
+@app.route('/voice-to-ticket', methods=['GET'])
+def voice_to_ticket_interface():
+    """Render the Voice-to-Ticket test interface."""
+    return render_template('voice_to_ticket.html')
+
+@app.route('/api-docs', methods=['GET'])
+def api_documentation():
+    """Render the complete API documentation."""
+    return render_template('api_docs.html')
 @app.route('/api/crm/case', methods=['POST'])
 async def create_crm_case():
     """Create a new case in CRM system."""
@@ -896,9 +1136,11 @@ async def speech_to_speech_chat():
         # Step 1: Convert speech to text
         client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
+        # Speech-to-text conversion using Whisper with Portuguese hint
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_file
+            file=audio_file,
+            language="pt"  # ISO-639-1 Portuguese code
         )
 
         user_text = transcript.text
@@ -945,11 +1187,15 @@ def text_to_speech():
     try:
         logger.info("Text-to-speech request received")
 
-        # Get request data
-        data = request.get_json()
-        if not data:
-            logger.error("No JSON data received")
-            return jsonify({'error': 'No JSON data provided'}), 400
+        # Get request data with better error handling
+        try:
+            data = request.get_json()
+            if not data:
+                logger.error("No JSON data received")
+                return jsonify({'error': 'No JSON data provided'}), 400
+        except Exception as json_error:
+            logger.error(f"JSON parsing error: {json_error}")
+            return jsonify({'error': f'Invalid JSON format: {str(json_error)}'}), 400
 
         logger.info(f"Request data: {data}")
 
@@ -965,12 +1211,21 @@ def text_to_speech():
 
         client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-        # Usar modelo HD para qualidade superior
+        # Convert text to speech using default or specified TTS model
+        # Default to HD quality for better Brazilian Portuguese pronunciation
+        model = data.get('model', 'tts-1-hd')  # Use HD model for better quality
+
+        # Optimize for Brazilian Portuguese
+        optimized_text = text
+        if voice in ['nova', 'shimmer', 'fable']:
+            # Add subtle hints for better Brazilian pronunciation
+            optimized_text = text.replace('ã', 'an').replace('õ', 'on') if any(char in text for char in 'ãõ') else text
+
         response = client.audio.speech.create(
-            model="tts-1-hd",  # Modelo HD para voz mais natural
+            model=model,
             voice=voice,
-            input=text,
-            speed=0.9  # Ligeiramente mais devagar para soar mais natural
+            input=optimized_text,
+            speed=0.95  # Slightly slower for clearer pronunciation
         )
 
         logger.info(f"TTS response received, content length: {len(response.content)}")
@@ -1031,10 +1286,11 @@ def speech_to_text():
 
         # Convert speech to text using Whisper
         logger.info(f"Sending {len(audio_content)} bytes to Whisper API")
+        # Speech-to-text conversion using Whisper with Brazilian Portuguese hint
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
             file=(filename, audio_content, mimetype),
-            language="pt"  # Portuguese language hint
+            language="pt"  # ISO-639-1 Portuguese code
         )
 
         logger.info(f"Transcription successful: '{transcript.text}'")
@@ -1079,7 +1335,12 @@ def speech_demo():
 
 @app.route('/', methods=['GET'])
 def index():
-    """Basic endpoint for testing."""
+    """Landing page for clients."""
+    return render_template('client_demo.html')
+
+@app.route('/api', methods=['GET'])
+def api_info():
+    """API information endpoint."""
     return jsonify({
         'message': 'AI Call Center System - Enterprise Edition',
         'version': '3.0.0',
@@ -1109,19 +1370,113 @@ def index():
         }
     })
 
+# Metrics API Routes
+@app.route('/api/metrics/overview')
+def metrics_overview():
+    """Get system overview metrics."""
+    try:
+        hours = int(request.args.get('hours', 24))
+        overview = call_center.metrics_collector.get_system_overview(hours)
+        return jsonify(overview)
+    except Exception as e:
+        logger.error(f"Metrics overview error: {str(e)}")
+        return jsonify({'error': 'Failed to get metrics overview'}), 500
+
+@app.route('/api/metrics/agent/<agent_type>')
+def agent_metrics(agent_type):
+    """Get metrics for specific agent."""
+    try:
+        hours = int(request.args.get('hours', 24))
+        performance = call_center.metrics_collector.get_agent_performance(agent_type, hours)
+
+        return jsonify({
+            'agent_type': performance.agent_type,
+            'period_start': performance.period_start.isoformat(),
+            'period_end': performance.period_end.isoformat(),
+            'accuracy': performance.accuracy,
+            'avg_latency': performance.avg_latency,
+            'throughput': performance.throughput,
+            'robustness_score': performance.robustness_score,
+            'fairness_score': performance.fairness_score,
+            'explainability_score': performance.explainability_score,
+            'total_interactions': performance.total_interactions,
+            'error_rate': performance.error_rate,
+            'satisfaction_score': performance.satisfaction_score,
+            'recent_interactions': performance.recent_interactions,
+            'max_concurrent_sessions': performance.max_concurrent_sessions,
+            'avg_concurrent_sessions': performance.avg_concurrent_sessions,
+            'capacity_utilization': performance.capacity_utilization,
+            'queue_time': performance.queue_time
+        })
+    except Exception as e:
+        logger.error(f"Agent metrics error: {str(e)}")
+        return jsonify({'error': 'Failed to get agent metrics'}), 500
+
+@app.route('/api/metrics/export')
+def export_metrics():
+    """Export metrics in various formats."""
+    try:
+        format_type = request.args.get('format', 'json')
+        hours = int(request.args.get('hours', 24))
+
+        data = call_center.metrics_collector.export_metrics(format_type, hours)
+
+        if format_type == 'csv':
+            return data, 200, {
+                'Content-Type': 'text/csv',
+                'Content-Disposition': 'attachment; filename=metrics.csv'
+            }
+
+        return jsonify({'data': data})
+    except Exception as e:
+        logger.error(f"Metrics export error: {str(e)}")
+        return jsonify({'error': 'Failed to export metrics'}), 500
+
+@app.route('/api/metrics/satisfaction', methods=['POST'])
+def track_user_satisfaction():
+    """Track user satisfaction rating."""
+    try:
+        data = request.get_json()
+        session_id = data.get('session_id')
+        rating = int(data.get('rating', 3))
+        feedback = data.get('feedback', '')
+
+        call_center.metrics_collector.track_user_satisfaction(
+            session_id, rating, feedback
+        )
+
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Satisfaction tracking error: {str(e)}")
+        return jsonify({'error': 'Failed to track satisfaction'}), 500
+
+@app.route('/api/metrics/concurrency')
+def get_concurrency_metrics():
+    """Get real-time concurrency metrics for all agents."""
+    try:
+        agents = ['triage', 'technical', 'billing', 'sales', 'escalation']
+        concurrency_data = {}
+
+        for agent in agents:
+            concurrency_data[agent] = call_center.metrics_collector.get_current_concurrency(agent)
+
+        return jsonify({
+            'timestamp': datetime.now().isoformat(),
+            'agents': concurrency_data
+        })
+    except Exception as e:
+        logger.error(f"Concurrency metrics error: {str(e)}")
+        return jsonify({'error': 'Failed to get concurrency metrics'}), 500
+
+@app.route('/dashboard')
+def metrics_dashboard():
+    """Serve the metrics dashboard."""
+    return render_template('dashboard.html')
+
 async def initialize_on_startup():
     """Initialize the system components asynchronously."""
     await call_center.initialize_system()
 
-# Health check endpoint para Cloud Run
-@app.route('/health')
-def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0',
-        'environment': os.getenv('ENVIRONMENT', 'development')
-    })
 
 if __name__ == '__main__':
     # Check for OpenAI API key
