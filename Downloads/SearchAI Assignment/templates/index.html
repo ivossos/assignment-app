@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Kore.ai Search AI Helper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron bg-primary text-white p-5 rounded mb-4">
+            <h1 class="display-4"><i class="fas fa-cogs"></i> Smart Assist API Configuration</h1>
+            <p class="lead">Professional Smart Assist deployment with API scope management and live testing capabilities.</p>
+            <hr class="my-4" style="border-color: rgba(255,255,255,0.3);">
+            <p>This application manages Smart Assist API scopes, authentication, and provides comprehensive testing for recipe and nutrition queries.</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Assignment Requirements</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><strong>App Name:</strong> {{ requirements.app_name }}</li>
+                    <li><strong>Platform:</strong> <a href="{{ requirements.platform_url }}" target="_blank">{{ requirements.platform_url }}</a></li>
+                    <li><strong>Evaluator:</strong> {{ requirements.evaluator_email }}</li>
+                    <li><strong>Web Chunk Size:</strong> {{ requirements.web_chunk_size }}</li>
+                </ul>
+                <a href="{{ url_for('deployment_guide') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-rocket"></i> Start Deployment
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-utensils"></i> Recipe Data Status</h5>
+            </div>
+            <div class="card-body">
+                {% if recipes_data %}
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h3 class="text-primary">{{ recipes_data.total_urls }}</h3>
+                        <small class="text-muted">Total URLs</small>
+                    </div>
+                    <div class="col-6">
+                        <h3 class="text-success">{{ recipes_data.filtered_urls }}</h3>
+                        <small class="text-muted">Filtered URLs</small>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {% if recipes_data.total_urls > 0 %}{{ (recipes_data.filtered_urls / recipes_data.total_urls * 100) | round }}{% else %}0{% endif %}%">
+                            {% if recipes_data.total_urls > 0 %}{{ (recipes_data.filtered_urls / recipes_data.total_urls * 100) | round }}{% else %}0{% endif %}%
+                        </div>
+                    </div>
+                    <small class="text-muted">Vegan & Chocolate Recipes</small>
+                </div>
+                {% else %}
+                <p class="text-danger">Failed to load recipe data</p>
+                {% endif %}
+                <a href="{{ url_for('recipes') }}" class="btn btn-outline-primary btn-sm mt-2">
+                    <i class="fas fa-list"></i> View Details
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-cogs"></i> Configuration Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                        Recipe Filtering
+                        <span class="badge bg-success rounded-pill">Ready</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                        Chunking Strategy
+                        <span class="badge bg-warning rounded-pill">Pending</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                        Knowledge Index
+                        <span class="badge bg-warning rounded-pill">Pending</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center p-2">
+                        API Testing
+                        <span class="badge bg-warning rounded-pill">Pending</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tasks"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('recipes') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-filter"></i> Filter Recipe URLs
+                    </a>
+                    <a href="{{ url_for('chunking') }}" class="btn btn-outline-info">
+                        <i class="fas fa-cut"></i> Configure Chunking
+                    </a>
+                    <a href="{{ url_for('api_test') }}" class="btn btn-outline-success">
+                        <i class="fas fa-vial"></i> Test Search API
+                    </a>
+                    <a href="{{ url_for('troubleshooting') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-wrench"></i> Troubleshooting Guide
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-question-circle"></i> Sample Queries</h5>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <p><strong>Recipe Queries:</strong></p>
+                    <ul class="list-unstyled">
+                        <li>• How to prepare dark chocolate almond bars?</li>
+                        <li>• What are the vegan recipes that I can prepare?</li>
+                        <li>• Which recipes require coconut whipped cream?</li>
+                    </ul>
+                    <p><strong>Nutrition Queries:</strong></p>
+                    <ul class="list-unstyled">
+                        <li>• What are almonds rich in?</li>
+                        <li>• What are the food items rich in vitamin C?</li>
+                        <li>• What should be the amount of water consumed per day?</li>
+                    </ul>
+                </div>
+                <a href="{{ url_for('api_test') }}" class="btn btn-sm btn-primary mt-2">
+                    <i class="fas fa-play"></i> Test These Queries
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

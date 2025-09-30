@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .query-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            min-width: 200px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .execute-button {
+            background: #28a745;
+            color: white;
+            padding: 20px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin: 20px 0;
+        }
+        .execute-button:hover {
+            background: #218838;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Simple API Test</h1>
+
+        <div>
+            <label for="query"><strong>Enter your query:</strong></label>
+            <input type="text" id="query" class="query-input"
+                   value="How to prepare dark chocolate almond bars?"
+                   placeholder="Enter your question here...">
+        </div>
+
+        <button class="execute-button" onclick="runTest()">
+            🚀 TEST API NOW
+        </button>
+
+        <div class="buttons-grid">
+            <button class="test-button" onclick="setQuery('How to prepare dark chocolate almond bars?')">
+                🍫 Chocolate Bars
+            </button>
+            <button class="test-button" onclick="setQuery('What are almonds rich in?')">
+                🥜 Almond Nutrition
+            </button>
+            <button class="test-button" onclick="setQuery('What are the vegan recipes?')">
+                🌱 Vegan Recipes
+            </button>
+            <button class="test-button" onclick="setQuery('What are healthy food tips?')">
+                🥗 Health Tips
+            </button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function setQuery(text) {
+            document.getElementById('query').value = text;
+            showMessage(`✅ Query set: ${text}`);
+        }
+
+        function runTest() {
+            const query = document.getElementById('query').value;
+            if (!query.trim()) {
+                showMessage('❌ Please enter a query first!');
+                return;
+            }
+
+            showMessage('⏳ Testing API...', true);
+
+            fetch('/api/test-search', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query: query})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(`✅ API Success!\n\nQuery: ${query}\nAnswer: ${data.analysis.answer_text}\nChunks found: ${data.analysis.chunks_count}\nSearch results: ${data.analysis.search_results_count}`);
+                } else {
+                    showMessage(`❌ API Error: ${data.error || 'Unknown error'}`);
+                }
+            })
+            .catch(error => {
+                showMessage(`❌ Connection Error: ${error.message}`);
+            });
+        }
+
+        function showMessage(text, isLoading = false) {
+            const result = document.getElementById('result');
+            if (isLoading) {
+                result.innerHTML = `<div class="loading">${text}</div>`;
+            } else {
+                result.innerHTML = `<div class="result"><pre>${text}</pre></div>`;
+            }
+        }
+
+        // Auto-focus on the input field
+        document.getElementById('query').focus();
+    </script>
+</body>
+</html>

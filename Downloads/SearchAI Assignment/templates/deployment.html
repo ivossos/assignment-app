@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Deployment Guide - Kore.ai Search AI Helper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-rocket"></i> Step-by-Step Deployment Guide</h2>
+        <p class="text-muted">Complete guide to deploy your Kore.ai Search AI application</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tasks"></i> Assignment Steps</h5>
+            </div>
+            <div class="card-body">
+                {% for step in steps %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-1">
+                                <div class="badge bg-primary rounded-circle p-3">
+                                    <h5 class="text-white mb-0">{{ step.number }}</h5>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <h6 class="mb-1">{{ step.title }}</h6>
+                                <p class="text-muted mb-0">{{ step.description }}</p>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                {% if step.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif step.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Important Notes</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li><strong>Evaluator Email:</strong> sowmya.doddi@kore.com</li>
+                    <li><strong>App Name:</strong> Assignment App</li>
+                    <li><strong>Platform:</strong> https://platform.kore.ai/</li>
+                    <li><strong>API Endpoint:</strong> /api/public/stream/&lt;appId&gt;/advancedSearch</li>
+                </ul>
+                <div class="alert alert-warning mt-3">
+                    <strong>Remember:</strong> Send confirmation email with answers to questions 7 & 8
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clipboard-check"></i> Submission Checklist</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check1">
+                    <label class="form-check-label" for="check1">
+                        Created "Assignment App" in Kore.ai platform
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check2">
+                    <label class="form-check-label" for="check2">
+                        Added sowmya.doddi@kore.com as App Developer
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check3">
+                    <label class="form-check-label" for="check3">
+                        Configured URL crawling (vegan & chocolate recipes)
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check4">
+                    <label class="form-check-label" for="check4">
+                        Added "Foods and importance" data source
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check5">
+                    <label class="form-check-label" for="check5">
+                        Configured chunking strategies
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check6">
+                    <label class="form-check-label" for="check6">
+                        Created knowledge index
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check7">
+                    <label class="form-check-label" for="check7">
+                        Selected answer generation model
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check8">
+                    <label class="form-check-label" for="check8">
+                        Deployed the application
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check9">
+                    <label class="form-check-label" for="check9">
+                        Tested API with sample queries
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="check10">
+                    <label class="form-check-label" for="check10">
+                        Sent confirmation email with answers
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

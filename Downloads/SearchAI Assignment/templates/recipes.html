@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Recipe Management - Kore.ai Search AI Helper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-utensils"></i> Recipe URL Management</h2>
+        <p class="text-muted">Filter and manage recipe URLs for Kore.ai Search AI crawling</p>
+    </div>
+</div>
+
+{% if recipes_data %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Statistics</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <h3 class="text-primary">{{ recipes_data.total_urls }}</h3>
+                        <small class="text-muted">Total URLs in CSV</small>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <h3 class="text-success">{{ recipes_data.filtered_urls }}</h3>
+                        <small class="text-muted">Vegan & Chocolate Recipes</small>
+                    </div>
+                    <div class="col-12">
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                 style="width: {% if recipes_data.total_urls > 0 %}{{ (recipes_data.filtered_urls / recipes_data.total_urls * 100) | round }}{% else %}0{% endif %}%">
+                                {% if recipes_data.total_urls > 0 %}{{ (recipes_data.filtered_urls / recipes_data.total_urls * 100) | round }}{% else %}0{% endif %}%
+                            </div>
+                        </div>
+                        <small class="text-muted">Filter Efficiency</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-filter"></i> Filter Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Filter Criteria:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="vegan" checked>
+                        <label class="form-check-label" for="vegan">Vegan recipes</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chocolate" checked>
+                        <label class="form-check-label" for="chocolate">Chocolate recipes</label>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="updateFilter()">
+                    <i class="fas fa-sync"></i> Update Filter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> Filtered URLs for Crawling</h5>
+                <button class="btn btn-sm btn-success" onclick="copyUrls()">
+                    <i class="fas fa-copy"></i> Copy URLs
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Instructions:</strong> These URLs should be added to your Kore.ai Search AI app for crawling.
+                    Only vegan and chocolate recipes are included as per assignment requirements.
+                </div>
+
+                <div class="mb-3">
+                    <textarea id="urlList" class="form-control" rows="15" readonly>{% for url in recipes_data.urls %}{{ url }}
+{% endfor %}</textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Example Vegan URLs:</h6>
+                        <ul class="list-unstyled small">
+                            {% for url in recipes_data.urls[:3] %}
+                                {% if 'vegan' in url %}
+                                <li><i class="fas fa-link text-success"></i> {{ url.split('/')[-2] }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Example Chocolate URLs:</h6>
+                        <ul class="list-unstyled small">
+                            {% for url in recipes_data.urls[:3] %}
+                                {% if 'chocolate' in url %}
+                                <li><i class="fas fa-link text-warning"></i> {{ url.split('/')[-2] }}</li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-cog"></i> Kore.ai Configuration Steps</h5>
+            </div>
+            <div class="card-body">
+                <ol>
+                    <li>Go to your Kore.ai Search AI app</li>
+                    <li>Navigate to <strong>Data Sources</strong> → <strong>Web Crawl</strong></li>
+                    <li>Add the filtered URLs from above</li>
+                    <li>Configure crawling settings:
+                        <ul>
+                            <li>Max pages per domain: 1 (since each URL is a single recipe)</li>
+                            <li>Crawl frequency: One-time or as needed</li>
+                            <li>Content filters: Focus on recipe content</li>
+                        </ul>
+                    </li>
+                    <li>Start the crawling process</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-danger">
+    <h4>Error Loading Recipe Data</h4>
+    <p>Failed to load the Recipes.csv file. Please ensure the file exists and is properly formatted.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyUrls() {
+    const urlList = document.getElementById('urlList');
+    urlList.select();
+    urlList.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+
+    // Show success message
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-info');
+
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-success');
+    }, 2000);
+}
+
+function updateFilter() {
+    // In a real implementation, this would make an AJAX call to update the filter
+    console.log('Filter update requested');
+    alert('Filter functionality would be implemented here to dynamically update the URL list.');
+}
+</script>
+{% endblock %}

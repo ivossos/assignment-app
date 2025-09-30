@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Troubleshooting - Kore.ai Search AI Helper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-wrench"></i> Troubleshooting Guide</h4>
+            </div>
+            <div class="card-body">
+                {% for issue in issues %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5>{{ issue.question }}</h5>
+                        <small class="text-danger">Problem: {{ issue.problem }}</small>
+                    </div>
+                    <div class="card-body">
+                        <h6>Solutions:</h6>
+                        <ul>
+                        {% for solution in issue.solutions %}
+                            <li>{{ solution }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> General Tips:</h6>
+                    <ul>
+                        <li>Ensure your app is fully deployed and published</li>
+                        <li>Verify JWT token is correctly generated with App ID</li>
+                        <li>Check API endpoint format matches your deployment</li>
+                        <li>Test with simple queries first</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

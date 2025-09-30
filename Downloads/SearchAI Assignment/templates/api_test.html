@@ -1,0 +1,1586 @@
+{% extends "base.html" %}
+
+{% block title %}Assignment Application - API Testing{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-vial"></i> Assignment Application - API Testing</h2>
+        <p class="text-muted">Test the Kore.ai Smart Assist API integration with sample queries</p>
+    </div>
+</div>
+
+<!-- Quick Test Buttons for All 10 Assignment Queries -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-rocket"></i> Quick Test - 10 Assignment Queries</h5>
+                <small class="text-muted">Click any button to instantly test the API with assignment queries</small>
+                <button class="btn btn-danger btn-sm float-end" onclick="window.location.reload();">🔄 Reload Page</button>
+                <button class="btn btn-success btn-sm float-end me-2" onclick="fetch('/api/test-search', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({query: 'test'})}).then(r => alert('API call made!'))">🧪 Direct API Test</button>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <button class="btn btn-primary w-100 mb-3" onclick="document.getElementById('searchQuery').value='How to prepare dark chocolate almond bars?'; document.querySelector('button[onclick*=executeSearch]').click();" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🍫 Dark Chocolate Almond Bars
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('What are almonds rich in?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🥜 Almond Nutrition
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('I have maple syrup with me. What can I do?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🍯 Maple Syrup Ideas
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('How long can I store chocolate mousse pie?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🥧 Chocolate Mousse Storage
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('What are the healthy food tips?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🥗 Healthy Food Tips
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('What should be the amount of water consumed per day?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            💧 Daily Water Intake
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('What are the food items rich in vitamin C?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🍊 Vitamin C Foods
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('What are the vegan recipes that I can prepare?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🌱 Vegan Recipes
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('Which recipes require coconut whipped cream?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🥥 Coconut Cream Recipes
+                        </button>
+                        <button class="btn btn-primary w-100 mb-3" onclick="quickTest('What are the ingredients required to prepare banana bread?')" style="font-size: 16px; font-weight: bold; padding: 15px; box-shadow: 0 4px 8px rgba(0,123,255,0.3); border: 2px solid #007bff;">
+                            🍌 Banana Bread Ingredients
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CURL Command Console - Top Position -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-terminal"></i> CURL Command Console</h5>
+                <div class="d-flex align-items-center">
+                    <small class="text-muted">Real-time CURL commands and API responses from quick test buttons</small>
+                    <div class="ms-auto">
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateCurlCommand()">
+                            <i class="fas fa-code"></i> Generate CURL
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="curlOutput" class="p-4" style="
+                    background: #ffffff;
+                    color: #333333;
+                    font-family: 'Courier New', 'Monaco', 'Menlo', monospace;
+                    font-size: 14px;
+                    height: 450px;
+                    overflow-y: auto;
+                    border-radius: 8px;
+                    border: 1px solid #dee2e6;
+                    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+                ">
+                    <div class="text-success" style="
+                        text-align: center;
+                        padding: 40px 20px;
+                        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(23, 162, 184, 0.1));
+                        border: 2px dashed rgba(40, 167, 69, 0.3);
+                        border-radius: 12px;
+                        margin: 20px;
+                    ">
+                        <div style="font-size: 24px; margin-bottom: 15px;">
+                            <i class="fas fa-terminal"></i> CURL Command Generator
+                        </div>
+                        <div style="font-size: 16px; margin-bottom: 10px; color: #17a2b8;">
+                            🚀 Click any quick test button above to see CURL commands and API responses!
+                        </div>
+                        <div style="font-size: 14px; color: #6c757d;">
+                            📋 Commands will be ready to copy and run directly from your terminal or browser
+                        </div>
+                        <div style="margin-top: 20px; font-size: 12px; color: #6c757d;">
+                            ═══════════════════════════════════════════════════════════════════════════
+                        </div>
+                    </div>
+                </div>
+                <div class="p-3 bg-light border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button class="btn btn-secondary me-2" onclick="clearCurlOutput()" style="font-weight: bold; padding: 10px 15px; box-shadow: 0 3px 6px rgba(0,0,0,0.2);">
+                                <i class="fas fa-broom"></i> Clear
+                            </button>
+                            <button class="btn btn-primary me-2" onclick="scrollCurlOutput()" style="font-weight: bold; padding: 10px 15px; box-shadow: 0 3px 6px rgba(0,123,255,0.3);">
+                                <i class="fas fa-arrow-down"></i> Scroll
+                            </button>
+                            <button class="btn btn-success me-2" onclick="copyCurlCommand()" style="font-weight: bold; padding: 10px 15px; box-shadow: 0 3px 6px rgba(40,167,69,0.3);">
+                                <i class="fas fa-copy"></i> Copy Command
+                            </button>
+                            <button class="btn btn-info me-2" onclick="testCurlCommand()" style="font-weight: bold; padding: 10px 15px; box-shadow: 0 3px 6px rgba(23,162,184,0.3);">
+                                <i class="fas fa-play"></i> Test Command
+                            </button>
+                            <button class="btn btn-warning me-2" onclick="runCurlInBrowser()" style="font-weight: bold; padding: 10px 15px; box-shadow: 0 3px 6px rgba(255,193,7,0.3);">
+                                <i class="fas fa-terminal"></i> Run CURL
+                            </button>
+                            <button class="btn btn-dark me-2" onclick="exportCurlCommands()" style="font-weight: bold; padding: 10px 15px; box-shadow: 0 3px 6px rgba(0,0,0,0.3);">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="fas fa-info-circle"></i> CURL commands generated from quick test buttons
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-cog"></i> API Configuration</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="apiEndpoint" class="form-label">API Endpoint:</label>
+                    <input type="text" class="form-control" id="apiEndpoint"
+                           value="{{ api_endpoint }}" readonly>
+                    <small class="form-text text-muted">Replace &lt;appId&gt; with your actual app ID</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="appId" class="form-label">Assignment App ID:</label>
+                    <input type="text" class="form-control" id="appId"
+                           value="st-b20b30fd-b75c-51cf-b95a-df9477562144"
+                           placeholder="Enter your Assignment app ID">
+                </div>
+
+                <div class="mb-3">
+                    <label for="clientId" class="form-label">Client ID:</label>
+                    <input type="text" class="form-control" id="clientId"
+                           value="cs-7828199c-cef7-5c0d-a8f2-b476d99f6d7e"
+                           placeholder="Enter your Assignment Client ID">
+                </div>
+
+                <div class="mb-3">
+                    <label for="clientSecret" class="form-label">Client Secret:</label>
+                    <input type="password" class="form-control" id="clientSecret"
+                           value="IaSIDMyZoOo91k9EyXwY1+coAJzoBz7Aa0lPoPy/QCQ="
+                           placeholder="Enter your Assignment Client Secret">
+                </div>
+
+                <div class="mb-3">
+                    <label for="authToken" class="form-label">Authorization Token:</label>
+                    <input type="password" class="form-control" id="authToken"
+                           placeholder="JWT token will be generated automatically">
+                    <small class="form-text text-muted">Leave empty to auto-generate JWT token</small>
+                </div>
+
+                <div class="btn-group mb-3" role="group">
+                    <button class="btn btn-primary" onclick="updateApiEndpoint()">
+                        <i class="fas fa-sync"></i> Update Endpoint
+                    </button>
+                    <button class="btn btn-success" onclick="generateJWTToken()">
+                        <i class="fas fa-key"></i> Generate JWT Token
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-search"></i> Query Testing</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="searchQuery" class="form-label">Search Query:</label>
+                    <textarea class="form-control" id="searchQuery" rows="3"
+                              placeholder="Type: How to prepare dark chocolate almond bars?">How to prepare dark chocolate almond bars?</textarea>
+                </div>
+
+                <div class="mb-3">
+                    <button class="btn btn-success btn-lg w-100" onclick="executeSearch()" style="font-size: 18px; font-weight: bold; padding: 15px;">
+                        <i class="fas fa-play"></i> EXECUTE SEARCH - CLICK HERE
+                    </button>
+                    <button class="btn btn-secondary mt-2" onclick="clearResults()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+
+                <div id="loadingIndicator" class="text-center" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Executing search...</p>
+                </div>
+
+                <div id="searchResults" class="mt-3"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clipboard-list"></i> Troubleshooting Common Issues</h5>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="troubleshootingAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseOne">
+                                Chunks qualified but no answer generated
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                            <div class="accordion-body">
+                                <strong>Problem:</strong> Query "How much time should I bake for perfect chocolate chip cookies?" -
+                                chunks get qualified but no answer is generated.
+                                <br><br>
+                                <strong>Solutions:</strong>
+                                <ul>
+                                    <li>Check LLM model configuration and temperature settings</li>
+                                    <li>Verify prompt engineering for answer generation</li>
+                                    <li>Ensure chunk relevance scoring is properly tuned</li>
+                                    <li>Review context window size for the LLM</li>
+                                    <li>Check if chunks contain sufficient information for answering</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#collapseTwo">
+                                No chunks qualified despite having relevant data
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                            <div class="accordion-body">
+                                <strong>Problem:</strong> Query "What are the calories of oats?" -
+                                no chunks are qualified but relevant data exists.
+                                <br><br>
+                                <strong>Solutions:</strong>
+                                <ul>
+                                    <li>Adjust similarity threshold for chunk qualification</li>
+                                    <li>Review embedding model configuration</li>
+                                    <li>Check indexing strategy for numerical data</li>
+                                    <li>Verify query preprocessing and normalization</li>
+                                    <li>Ensure proper synonym handling for food items</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setQuery(query) {
+    document.getElementById('searchQuery').value = query;
+    generateCurlCommandsForQuery(query);
+    logToCurlOutput(`Query selected and CURL commands generated: "${query}"`, 'info');
+}
+
+function testQueryField() {
+    const testQuery = "TEST QUERY " + new Date().toLocaleTimeString();
+    console.log('🧪 Testing query field update with:', testQuery);
+
+    const queryField = document.getElementById('searchQuery');
+    console.log('🎯 Found query field:', !!queryField);
+    console.log('🎯 Query field element:', queryField);
+
+    if (queryField) {
+        console.log('📝 Before update:', queryField.value);
+        queryField.value = testQuery;
+        console.log('📝 After update:', queryField.value);
+
+        queryField.style.backgroundColor = 'yellow';
+        queryField.style.border = '3px solid red';
+
+        alert(`Field updated!\nBefore: Empty\nAfter: ${queryField.value}\nCheck console for details.`);
+
+        setTimeout(() => {
+            queryField.style.backgroundColor = '';
+            queryField.style.border = '';
+        }, 3000);
+    } else {
+        alert('ERROR: Query field not found!');
+    }
+}
+
+function simpleSetQuery(query) {
+    // Super simple version - just set the field and show alert
+    const field = document.getElementById('searchQuery');
+    if (field) {
+        field.value = query;
+        field.style.backgroundColor = 'lightgreen';
+        field.focus();
+
+        // Show immediate confirmation
+        alert(`Query set to: "${query}"\nField value is now: "${field.value}"`);
+
+        setTimeout(() => {
+            field.style.backgroundColor = '';
+        }, 2000);
+    } else {
+        alert('ERROR: Cannot find search query field!');
+    }
+}
+
+function setQueryAndExecute(query) {
+    try {
+        console.log('🔍 setQueryAndExecute called with query:', query);
+
+        // Clear any previous results first
+        const resultsDiv = document.getElementById('searchResults');
+        if (resultsDiv) {
+            resultsDiv.innerHTML = '';
+        }
+
+        // Find and update the query field with extensive debugging
+        const queryField = document.getElementById('searchQuery');
+        console.log('🎯 Query field element:', queryField);
+        console.log('🎯 Query field type:', queryField ? queryField.tagName : 'NOT FOUND');
+
+        if (queryField) {
+            console.log('📝 Current value before update:', queryField.value);
+            queryField.value = query;
+            console.log('📝 Current value after update:', queryField.value);
+
+            // Force focus and trigger events
+            queryField.focus();
+            queryField.dispatchEvent(new Event('input', { bubbles: true }));
+            queryField.dispatchEvent(new Event('change', { bubbles: true }));
+
+            // Enhanced visual feedback
+            queryField.style.backgroundColor = '#fff3cd';
+            queryField.style.border = '3px solid #28a745';
+            queryField.style.boxShadow = '0 0 10px rgba(40, 167, 69, 0.5)';
+
+            // Show immediate success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success position-fixed';
+            notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            notification.innerHTML = `
+                <strong>✅ Query Updated!</strong><br>
+                Query: "${query}"<br>
+                <small>Field value: "${queryField.value}"</small>
+            `;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                queryField.style.backgroundColor = '';
+                queryField.style.border = '';
+                queryField.style.boxShadow = '';
+                if (notification && notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+
+        } else {
+            console.error('❌ Query field not found!');
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'alert alert-danger position-fixed';
+            errorMsg.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            errorMsg.innerHTML = `❌ Error: Cannot find search query field with ID "searchQuery"`;
+            document.body.appendChild(errorMsg);
+            setTimeout(() => {
+                if (errorMsg && errorMsg.parentNode) {
+                    errorMsg.parentNode.removeChild(errorMsg);
+                }
+            }, 5000);
+            return;
+        }
+
+        logToCurlOutput(`Running query: "${query}"`, 'info');
+
+        // Small delay to show the query was set, then execute
+        setTimeout(() => {
+            executeSearch();
+        }, 300);
+    } catch (error) {
+        console.error('❌ Error in setQueryAndExecute:', error);
+        alert('Error setting query: ' + error.message);
+    }
+}
+
+let currentQuery = '';
+let currentCurlCommand = '';
+let allCurlCommands = [];
+
+function logToCurlOutput(message, type = 'info', isCommand = false) {
+    const curlOutput = document.getElementById('curlOutput');
+    const timestamp = new Date().toLocaleTimeString();
+    let color = '#333333';
+    let icon = '📝';
+    let bgColor = 'rgba(255,255,255,0.1)';
+    let borderColor = '#6c757d';
+
+    switch(type) {
+        case 'success':
+            color = '#28a745';
+            icon = '✅';
+            bgColor = 'rgba(40, 167, 69, 0.1)';
+            borderColor = '#28a745';
+            break;
+        case 'error':
+            color = '#dc3545';
+            icon = '❌';
+            bgColor = 'rgba(220, 53, 69, 0.1)';
+            borderColor = '#dc3545';
+            break;
+        case 'warning':
+            color = '#856404';
+            icon = '⚠️';
+            bgColor = 'rgba(255, 193, 7, 0.1)';
+            borderColor = '#ffc107';
+            break;
+        case 'info':
+            color = '#0c5460';
+            icon = '💡';
+            bgColor = 'rgba(23, 162, 184, 0.1)';
+            borderColor = '#17a2b8';
+            break;
+        case 'curl':
+            color = '#6f42c1';
+            icon = '🔧';
+            bgColor = 'rgba(111, 66, 193, 0.1)';
+            borderColor = '#6f42c1';
+            break;
+        case 'command':
+            color = '#004085';
+            icon = '▶️';
+            bgColor = 'rgba(0, 123, 255, 0.1)';
+            borderColor = '#007bff';
+            break;
+    }
+
+    if (isCommand) {
+        const commandLine = `
+            <div class="${color} mt-3 mb-3" style="
+                background: linear-gradient(135deg, ${bgColor}, rgba(111, 66, 193, 0.15));
+                padding: 20px;
+                border: 3px solid ${borderColor};
+                border-radius: 12px;
+                word-break: break-all;
+                white-space: pre-wrap;
+                font-family: 'Courier New', 'Monaco', monospace;
+                font-size: 14px;
+                font-weight: bold;
+                line-height: 1.5;
+                box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
+                position: relative;
+                overflow-x: auto;
+                border-left: 8px solid #6f42c1;
+            " data-command="true">
+                <div style="position: absolute; top: 10px; right: 15px;">
+                    <button class="btn btn-sm btn-outline-primary" onclick="copySpecificCommand(this)" title="Copy this command" style="background: rgba(255,255,255,0.9);">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button class="btn btn-sm btn-outline-success ms-1" onclick="runSpecificCommand(this)" title="Run this command" style="background: rgba(255,255,255,0.9);">
+                        <i class="fas fa-play"></i> Run
+                    </button>
+                </div>
+                <div style="padding-right: 80px;">${message}</div>
+            </div>
+        `;
+        curlOutput.innerHTML += commandLine;
+    } else {
+        const logLine = `
+            <div class="${color}" data-type="${type}" data-timestamp="${timestamp}" style="
+                padding: 5px 10px;
+                border-left: 2px solid ${borderColor};
+                background: ${bgColor};
+                margin: 2px 0;
+                border-radius: 4px;
+            ">
+                [${timestamp}] ${icon} ${message}
+            </div>
+        `;
+        curlOutput.innerHTML += logLine;
+    }
+
+    curlOutput.scrollTop = curlOutput.scrollHeight;
+}
+
+function clearCurlOutput() {
+    const curlOutput = document.getElementById('curlOutput');
+    curlOutput.innerHTML = `
+        <div class="text-success" style="
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(23, 162, 184, 0.1));
+            border: 2px dashed rgba(40, 167, 69, 0.3);
+            border-radius: 12px;
+            margin: 20px;
+        ">
+            <div style="font-size: 24px; margin-bottom: 15px;">
+                <i class="fas fa-terminal"></i> CURL Command Generator
+            </div>
+            <div style="font-size: 16px; margin-bottom: 10px; color: #17a2b8;">
+                🚀 Select a query template above to generate CURL commands automatically!
+            </div>
+            <div style="font-size: 14px; color: #6c757d;">
+                📋 Commands will be ready to copy and run directly from your terminal or browser
+            </div>
+            <div style="margin-top: 20px; font-size: 12px; color: #6c757d;">
+                ═══════════════════════════════════════════════════════════════════════════
+            </div>
+        </div>
+    `;
+    currentCurlCommand = '';
+    allCurlCommands = [];
+}
+
+function scrollCurlOutput() {
+    const curlOutput = document.getElementById('curlOutput');
+    curlOutput.scrollTop = curlOutput.scrollHeight;
+}
+
+function generateCurlCommand() {
+    const selector = document.getElementById('queryTemplateSelector');
+    const selectedValue = selector.value;
+
+    if (!selectedValue || selectedValue === '') {
+        logToCurlOutput('Please select a query template first', 'warning');
+        return;
+    }
+
+    let queryText = selectedValue === 'custom' ? document.getElementById('customQueryInput').value.trim() : selectedValue;
+
+    if (!queryText) {
+        logToCurlOutput('Query text is empty', 'error');
+        return;
+    }
+
+    currentQuery = queryText;
+    generateCurlCommandsForQuery(queryText);
+}
+
+function generateCurlCommandsForQuery(query) {
+    logToCurlOutput(`Generating CURL commands for: "${query}"`, 'info');
+
+    const appId = document.getElementById('appId').value || 'st-b20b30fd-b75c-51cf-b95a-df9477562144';
+    const clientId = document.getElementById('clientId').value || 'cs-7828199c-cef7-5c0d-a8f2-b476d99f6d7e';
+    const clientSecret = document.getElementById('clientSecret').value || 'IaSIDMyZoOo91k9EyXwY1+coAJzoBz7Aa0lPoPy/QCQ=';
+
+    // JWT Generation Command
+    const jwtCommand = `curl -X POST http://127.0.0.1:8080/api/generate-jwt \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "client_id": "${clientId}",
+    "client_secret": "${clientSecret}"
+  }'`;
+
+    logToCurlOutput('Step 1: JWT Token Generation', 'curl');
+    logToCurlOutput(jwtCommand, 'command', true);
+
+    // Direct API Command
+    const apiCommand = `curl -X POST "https://platform.kore.ai/api/public/bot/${appId}/search/v2/advanced-search?AppID=${appId}" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: application/json" \\
+  -H "auth: YOUR_JWT_TOKEN" \\
+  -d '{
+    "query": "${query.replace(/"/g, '\\"')}",
+    "answerSearch": true,
+    "searchResults": true,
+    "metaFilters": [
+      {
+        "condition": "AND",
+        "rules": [
+          {
+            "fieldName": "sourceType",
+            "fieldValue": ["web"],
+            "operator": "contains"
+          }
+        ]
+      }
+    ],
+    "isFacetsEnable": true,
+    "customData": {
+      "location": "CURL_Test",
+      "userIdentity": "test@example.com"
+    },
+    "includeChunksInResponse": true
+  }'`;
+
+    logToCurlOutput('Step 2: Direct Smart Assist API Call', 'curl');
+    logToCurlOutput(apiCommand, 'command', true);
+
+    // One-liner version
+    const oneLineCommand = `curl -X POST "https://platform.kore.ai/api/public/bot/${appId}/search/v2/advanced-search?AppID=${appId}" -H "Content-Type: application/json" -H "auth: YOUR_JWT_TOKEN" -d '{"query":"${query.replace(/"/g, '\\"')}","answerSearch":true,"searchResults":true,"isFacetsEnable":true,"includeChunksInResponse":true}'`;
+
+    logToCurlOutput('Step 3: One-line Command (Quick Copy)', 'curl');
+    logToCurlOutput(oneLineCommand, 'command', true);
+
+    currentCurlCommand = apiCommand;
+    allCurlCommands.push({
+        query: query,
+        jwt_command: jwtCommand,
+        api_command: apiCommand,
+        oneline_command: oneLineCommand,
+        timestamp: new Date().toISOString()
+    });
+
+    logToCurlOutput('\u2705 CURL commands generated successfully!', 'success');
+    logToCurlOutput('Replace YOUR_JWT_TOKEN with actual token from Step 1', 'info');
+}
+
+function updateApiEndpoint() {
+    const appId = document.getElementById('appId').value;
+    const endpoint = document.getElementById('apiEndpoint').value;
+
+    if (appId) {
+        const newEndpoint = endpoint.replace('<appId>', appId);
+        document.getElementById('apiEndpoint').value = newEndpoint;
+        logToCurlOutput(`API endpoint updated with App ID: ${appId}`, 'success');
+        alert('API endpoint updated with your App ID!');
+    } else {
+        logToCurlOutput('App ID required to update endpoint', 'warning');
+        alert('Please enter your App ID first.');
+    }
+}
+
+function quickTestChocolate() {
+    alert('Chocolate button clicked!');
+    try {
+        quickTest('How to prepare dark chocolate almond bars?');
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+function quickTest(query) {
+    console.log('QuickTest called with query:', query);
+
+    try {
+        // Set the query in the textarea
+        document.getElementById('searchQuery').value = query;
+
+        // Clear previous results
+        clearCurlOutput();
+
+        // Log to CURL console
+        logToCurlOutput(`🚀 Quick Testing: "${query}"`, 'info');
+        logToCurlOutput('═══════════════════════════════════════════════════', 'info');
+
+        // Generate and display CURL command
+        generateCurlCommandsForQuery(query);
+
+        // Execute the search
+        executeSearch();
+    } catch (error) {
+        console.error('Error in quickTest:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+function generateCurlCommandForQuery(query) {
+    const appId = document.getElementById('appId').value || 'st-b20b30fd-b75c-51cf-b95a-df9477562144';
+    const curlCommand = `curl -X POST http://127.0.0.1:8080/api/test-search \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "${query.replace(/'/g, "\\'")}"}';
+
+    logToCurlOutput('🔥🔥🔥 IMPORTANT: CURL COMMAND 🔥🔥🔥', 'warning');
+    logToCurlOutput('═════════════════════════════════════════════════════════', 'info');
+    logToCurlOutput('📋 Copy this command to run in your terminal:', 'info');
+    logToCurlOutput(curlCommand, 'curl', true); // Set isCommand to true for copy/run buttons
+    logToCurlOutput('═════════════════════════════════════════════════════════', 'info');
+    logToCurlOutput('⏳ Executing API request...', 'info');
+}
+
+function executeSearch() {
+    const query = document.getElementById('searchQuery').value;
+    const appId = document.getElementById('appId').value;
+    const authToken = document.getElementById('authToken').value;
+
+    if (!query.trim()) {
+        logToCurlOutput('Search query is required', 'error');
+        alert('Please enter a search query.');
+        return;
+    }
+
+    if (!appId.trim()) {
+        logToCurlOutput('App ID is required', 'error');
+        alert('Please enter your App ID.');
+        return;
+    }
+
+    // Log the API request
+    logToCurlOutput(`Starting API request...`, 'info');
+    logToCurlOutput(`Query: "${query}"`, 'info');
+    logToCurlOutput(`App ID: ${appId}`, 'info');
+    logToCurlOutput(`Auth Token: ${authToken ? 'Provided' : 'Auto-generate'}`, 'info');
+
+    // Show loading indicator
+    document.getElementById('loadingIndicator').style.display = 'block';
+    document.getElementById('searchResults').innerHTML = '';
+
+    const startTime = Date.now();
+
+    // Make actual API call
+    fetch('/api/test-search', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            query: query,
+            app_id: appId,
+            auth_token: authToken
+        })
+    })
+    .then(response => {
+        const responseTime = Date.now() - startTime;
+        logToCurlOutput(`HTTP Response: ${response.status} ${response.statusText} (${responseTime}ms)`, response.ok ? 'success' : 'error');
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        logToCurlOutput(`API Response received`, 'success');
+
+        if (data.success) {
+            logToCurlOutput(`Search completed successfully`, 'success');
+            if (data.auth_method) {
+                logToCurlOutput(`Authentication method: ${data.auth_method}`, 'info');
+            }
+
+            // Display the actual answer text in CURL console
+            if (data.analysis && data.analysis.answer_text) {
+                logToCurlOutput('═══════════════════════════════════════════════════', 'info');
+                logToCurlOutput('📖 API Response Text:', 'info');
+                logToCurlOutput('═══════════════════════════════════════════════════', 'info');
+
+                // Display answer with better formatting
+                const answerText = data.analysis.answer_text;
+                if (answerText === "I don't know.") {
+                    logToCurlOutput(`❓ ${answerText}`, 'warning');
+                    logToCurlOutput('💡 This query may be outside the recipe/cooking domain', 'info');
+                } else {
+                    logToCurlOutput(answerText, 'success');
+                }
+
+                logToCurlOutput('═══════════════════════════════════════════════════', 'info');
+                logToCurlOutput(`📊 Search Results: ${data.analysis.search_results_count} found`, 'info');
+                logToCurlOutput(`📄 Chunks: ${data.analysis.chunks_count} processed`, 'info');
+            }
+        } else if (data.error) {
+            logToCurlOutput(`API Error: ${data.error}`, 'error');
+        }
+
+        displayActualResults(data, query);
+    })
+    .catch(error => {
+        document.getElementById('loadingIndicator').style.display = 'none';
+        logToCurlOutput(`Request failed: ${error.message}`, 'error');
+        displayErrorResult(error, query);
+    });
+}
+
+function displayActualResults(data, query) {
+    const resultsDiv = document.getElementById('searchResults');
+
+    if (data.error) {
+        resultsDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h6><i class="fas fa-exclamation-triangle"></i> API Error</h6>
+                <p><strong>Error:</strong> ${data.error}</p>
+                ${data.details ? '<p><strong>Details:</strong> ' + data.details + '</p>' : ''}
+                ${data.suggestion ? '<p><strong>Suggestion:</strong> ' + data.suggestion + '</p>' : ''}
+            </div>
+        `;
+        return;
+    }
+
+    if (data.success) {
+        const response = data.response;
+        let parsedContent = '';
+
+        // Check if response has meaningful data - handle both response formats
+        const answer = response.answer || (response.answer_details && response.answer_details.response && response.answer_details.response.answer);
+        const searchResults = response.searchResults || (response.template && response.template.results && response.template.results.web && response.template.results.web.data) || [];
+        const chunks = response.chunks || response.chunk_result || [];
+
+        const hasAnswer = !!answer;
+        const hasSearchResults = searchResults.length > 0;
+        const hasChunks = chunks.length > 0;
+        const hasNoData = !hasAnswer && !hasSearchResults && !hasChunks;
+
+        if (hasNoData && response) {
+            // Show configuration issue explanation
+            parsedContent = `
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Assignment App Configuration Issue</h6>
+                    <p class="mb-2">The API responded successfully, but returned no search results or answers. This typically means:</p>
+                    <ul class="mb-2">
+                        <li>The Assignment app has no knowledge sources configured</li>
+                        <li>The recipe data hasn't been indexed yet</li>
+                        <li>The search query doesn't match any indexed content</li>
+                    </ul>
+                    <p class="mb-0"><strong>Solution:</strong> Check your Assignment app configuration in the Kore.ai platform to ensure recipe data sources are properly added and indexed.</p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-info-circle"></i> API Response Details</h6>
+                    </div>
+                    <div class="card-body">
+                        ${response.template ? '<p><strong>Template:</strong> ' + response.template + '</p>' : ''}
+                        ${response.templateType ? '<p><strong>Template Type:</strong> ' + response.templateType + '</p>' : ''}
+                        ${response.requestId ? '<p><strong>Request ID:</strong> ' + response.requestId + '</p>' : ''}
+                        ${response.retrievalResponseTime ? '<p><strong>Retrieval Time:</strong> ' + response.retrievalResponseTime + 'ms</p>' : ''}
+                        ${response.llmResponseTime ? '<p><strong>LLM Response Time:</strong> ' + response.llmResponseTime + 'ms</p>' : ''}
+
+                        <div class="mt-3">
+                            <h6>Available Response Keys:</h6>
+                            <code>${Object.keys(response).join(', ')}</code>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Show parsed meaningful results
+            if (hasAnswer) {
+                parsedContent += `
+                    <div class="alert alert-success mb-3">
+                        <h6><i class="fas fa-lightbulb"></i> Smart Assist Answer:</h6>
+                        <p class="mb-0">${answer}</p>
+                    </div>
+                `;
+            }
+
+            if (hasSearchResults) {
+                parsedContent += `
+                    <div class="mb-3">
+                        <h6><i class="fas fa-search"></i> Found ${searchResults.length} recipe sources:</h6>
+                `;
+
+                searchResults.slice(0, 3).forEach((result, index) => {
+                    parsedContent += `
+                        <div class="card mb-2">
+                            <div class="card-body p-3">
+                                <h6 class="card-title text-primary">${result.title || result.recordTitle || 'Recipe Source'}</h6>
+                                ${(result.url || result.recordUrl) ? '<small class="text-muted d-block mb-2"><i class="fas fa-link"></i> <a href="' + (result.url || result.recordUrl) + '" target="_blank" class="text-decoration-none">' + (result.url || result.recordUrl).substring(0, 50) + '...</a></small>' : ''}
+                                <p class="card-text">${result.content ? result.content.substring(0, 200) + '...' : 'Recipe content available'}</p>
+                                ${result.score ? '<small class="text-success"><i class="fas fa-star"></i> Relevance: ' + (result.score * 100).toFixed(1) + '%</small>' : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if (searchResults.length > 3) {
+                    parsedContent += `<small class="text-muted">... and ${searchResults.length - 3} more results</small>`;
+                }
+                parsedContent += `</div>`;
+            }
+
+            if (hasChunks) {
+                parsedContent += `
+                    <div class="mb-3">
+                        <h6><i class="fas fa-puzzle-piece"></i> Knowledge Chunks Used:</h6>
+                        <div class="text-muted">Found ${chunks.length} relevant knowledge chunks from the recipe database.</div>
+                    </div>
+                `;
+            }
+
+            // Response metadata
+            parsedContent += `
+                <div class="mb-3">
+                    <h6><i class="fas fa-info-circle"></i> Response Details:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Query ID:</strong> ${response.queryId || 'N/A'}<br/>
+                                <strong>Response Time:</strong> ${response.responseTime || 'N/A'}ms<br/>
+                                <strong>Source:</strong> Assignment API
+                            </small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>App ID:</strong> ${data.app_id}<br/>
+                                <strong>Auth Method:</strong> ${data.auth_method}<br/>
+                                <strong>Status:</strong> <span class="text-success">Success</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        const result = `
+            <div class="alert alert-success">
+                <h6><i class="fas fa-check-circle"></i> API Response Successful</h6>
+                <p>Connected to Assignment Application API successfully!</p>
+                ${data.auth_method ? '<small>Authentication method: ' + data.auth_method + '</small>' : ''}
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h6>Search Results for: "${query}"</h6>
+                </div>
+                <div class="card-body">
+                    ${parsedContent}
+
+                    <details class="mt-3">
+                        <summary class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-code"></i> View Raw JSON Response & Curl Commands
+                        </summary>
+                        <div class="mt-2">
+                            <div class="bg-light p-3 rounded">
+                                <h6>Parsed Response Structure:</h6>
+                                <ul class="list-unstyled small">
+                                    <li>✓ Answer: ${hasAnswer ? 'Present' : 'Not found'}</li>
+                                    <li>✓ Search Results: ${searchResults.length} items</li>
+                                    <li>✓ Chunks: ${chunks.length} items</li>
+                                    <li>✓ Facets: ${response && response.facets ? 'Available' : 'Not available'}</li>
+                                </ul>
+                            </div>
+
+                            <!-- Curl Command Display -->
+                            <div class="mt-3">
+                                <h6><i class="fas fa-terminal"></i> Equivalent Curl Commands:</h6>
+                                <div class="bg-dark text-light p-3 rounded" style="font-family: 'Courier New', monospace; font-size: 12px;">
+                                    <div class="text-success mb-2"># 1. Generate JWT Token First:</div>
+                                    <div class="text-light mb-3" style="word-wrap: break-word; white-space: pre-wrap;">curl -X POST http://127.0.0.1:9001/api/generate-jwt \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "client_id": "cs-7828199c-cef7-5c0d-a8f2-b476d99f6d7e",
+    "client_secret": "IaSIDMyZoOo91k9EyXwY1+coAJzoBz7Aa0lPoPy/QCQ="
+  }'</div>
+
+                                    <div class="text-success mb-2"># 2. Direct API Call to Smart Assist:</div>
+                                    <div class="text-warning mb-3" style="word-wrap: break-word; white-space: pre-wrap;">curl -X POST "https://platform.kore.ai/api/public/bot/st-b20b30fd-b75c-51cf-b95a-df9477562144/search/v2/advanced-search?AppID=st-b20b30fd-b75c-51cf-b95a-df9477562144" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: application/json" \\
+  -H "auth: YOUR_JWT_TOKEN" \\
+  -d '{
+    "query": "' + query + '",
+    "answerSearch": true,
+    "searchResults": true,
+    "metaFilters": [
+      {
+        "condition": "AND",
+        "rules": [
+          {
+            "fieldName": "sourceType",
+            "fieldValue": ["web"],
+            "operator": "contains"
+          }
+        ]
+      }
+    ],
+    "isFacetsEnable": true,
+    "customData": {
+      "location": "API_Test",
+      "userIdentity": "test@example.com"
+    },
+    "includeChunksInResponse": true
+  }'</div>
+
+                                    <div class="text-info mb-2"># 3. Quick copy-paste version (replace YOUR_JWT_TOKEN and QUERY_TEXT):</div>
+                                    <div class="bg-secondary text-light p-2 rounded small" style="word-wrap: break-word; white-space: pre-wrap; cursor: pointer;" onclick="copyWorkingCurlCommand(); alert('Working curl command copied to clipboard!');" title="Click to copy working curl command">curl -X POST "https://platform.kore.ai/api/public/bot/st-b20b30fd-b75c-51cf-b95a-df9477562144/search/v2/advanced-search?AppID=st-b20b30fd-b75c-51cf-b95a-df9477562144" \\
+  -H "Content-Type: application/json" \\
+  -H "Accept: application/json" \\
+  -H "auth: YOUR_JWT_TOKEN" \\
+  -d '{"query":"QUERY_TEXT","answerSearch":true,"searchResults":true,"isFacetsEnable":true,"includeChunksInResponse":true}'</div>
+                                    <small class="text-muted">⬆️ Click above to copy working curl command</small>
+
+                                    <div class="alert alert-warning mt-3">
+                                        <small><i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Important:</strong> Replace YOUR_JWT_TOKEN with actual token from step 1 and QUERY_TEXT with your actual query.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <h6><i class="fas fa-file-code"></i> Raw JSON Response:</h6>
+                                <pre class="bg-dark text-light p-3 rounded mt-2" style="font-size: 11px; max-height: 300px; overflow: auto;">${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        `;
+        resultsDiv.innerHTML = result;
+    }
+}
+
+function displayErrorResult(error, query) {
+    const resultsDiv = document.getElementById('searchResults');
+
+    resultsDiv.innerHTML = `
+        <div class="alert alert-danger">
+            <h6><i class="fas fa-exclamation-triangle"></i> Request Failed</h6>
+            <p><strong>Error:</strong> ${error.message || error}</p>
+            <p><strong>Query:</strong> "${query}"</p>
+        </div>
+    `;
+}
+
+function generateJWTToken() {
+    const clientId = document.getElementById('clientId').value;
+    const clientSecret = document.getElementById('clientSecret').value;
+
+    if (!clientId.trim()) {
+        logToCurlOutput('Client ID required for JWT generation', 'error');
+        alert('Please enter your Client ID first.');
+        return;
+    }
+
+    if (!clientSecret.trim()) {
+        logToCurlOutput('Client Secret required for JWT generation', 'error');
+        alert('Please enter your Client Secret.');
+        return;
+    }
+
+    logToCurlOutput('Generating JWT token...', 'info');
+    logToCurlOutput(`Client ID: ${clientId}`, 'info');
+    logToCurlOutput('Client Secret: [HIDDEN]', 'info');
+
+    fetch('/api/generate-jwt', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            client_id: clientId,
+            client_secret: clientSecret
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('authToken').value = data.token;
+            logToCurlOutput('JWT token generated successfully', 'success');
+            if (data.token_preview) {
+                logToCurlOutput(`Token preview: ${data.token_preview}`, 'info');
+            }
+            alert('Assignment Application JWT token generated successfully!');
+        } else {
+            logToCurlOutput(`JWT generation failed: ${data.error}`, 'error');
+            alert('Failed to generate JWT token: ' + data.error);
+        }
+    })
+    .catch(error => {
+        logToCurlOutput(`JWT request failed: ${error.message}`, 'error');
+        alert('Error generating JWT token: ' + error.message);
+    });
+}
+
+function clearResults() {
+    document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchQuery').value = '';
+    logToCurlOutput('Search results and query cleared', 'info');
+}
+
+// Environment Variables Functions
+function copyCurlCommand() {
+    if (!currentCurlCommand) {
+        logToCurlOutput('No CURL command available to copy. Generate one first!', 'warning');
+        return;
+    }
+
+    navigator.clipboard.writeText(currentCurlCommand).then(() => {
+        logToCurlOutput('CURL command copied to clipboard!', 'success');
+
+        // Show temporary success notification
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = '✅ CURL command copied to clipboard!';
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification && notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 2000);
+    }).catch(() => {
+        logToCurlOutput('Failed to copy CURL command to clipboard', 'error');
+
+        // Fallback: show command in a text area for manual copy
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="copyModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Copy CURL Command</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <textarea class="form-control" rows="10" readonly>${currentCurlCommand}</textarea>
+                            <small class="text-muted">Select all text above and copy manually</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        const bootstrapModal = new bootstrap.Modal(document.getElementById('copyModal'));
+        bootstrapModal.show();
+
+        document.getElementById('copyModal').addEventListener('hidden.bs.modal', function () {
+            document.body.removeChild(modal);
+        });
+    });
+}
+
+function testCurlCommand() {
+    if (!currentQuery) {
+        logToCurlOutput('No query available to test. Generate CURL commands first!', 'warning');
+        return;
+    }
+
+    logToCurlOutput('Testing CURL command by running equivalent API call...', 'info');
+
+    // Set the query and execute the search
+    document.getElementById('searchQuery').value = currentQuery;
+    executeSearch();
+}
+
+function copySpecificCommand(button) {
+    const commandDiv = button.closest('[data-command="true"]');
+    const commandText = commandDiv.querySelector('div:last-child').textContent.trim();
+
+    navigator.clipboard.writeText(commandText).then(() => {
+        const originalIcon = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        button.classList.remove('btn-outline-light');
+        button.classList.add('btn-success');
+
+        logToCurlOutput('Command copied to clipboard!', 'success');
+
+        setTimeout(() => {
+            button.innerHTML = originalIcon;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-light');
+        }, 2000);
+    }).catch(() => {
+        logToCurlOutput('Failed to copy command to clipboard', 'error');
+    });
+}
+
+function runSpecificCommand(button) {
+    const commandDiv = button.closest('[data-command="true"]');
+    const commandText = commandDiv.querySelector('div:last-child').textContent.trim();
+
+    logToCurlOutput('Executing CURL command...', 'info');
+
+    // Show loading state
+    const originalIcon = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+
+    executeCurlCommand(commandText).then(result => {
+        logToCurlOutput('CURL command executed successfully', 'success');
+        logToCurlOutput(`Response: ${result}`, 'info');
+    }).catch(error => {
+        logToCurlOutput(`CURL execution failed: ${error.message}`, 'error');
+    }).finally(() => {
+        button.innerHTML = originalIcon;
+        button.disabled = false;
+    });
+}
+
+function runCurlInBrowser() {
+    if (!currentCurlCommand) {
+        logToCurlOutput('No CURL command available to run. Generate one first!', 'warning');
+        return;
+    }
+
+    logToCurlOutput('Running CURL command through browser...', 'info');
+
+    // Extract query from current curl command
+    const queryMatch = currentCurlCommand.match(/"query"\s*:\s*"([^"]+)"/);
+    if (queryMatch) {
+        const query = queryMatch[1];
+        document.getElementById('searchQuery').value = query;
+        executeSearch();
+    } else {
+        logToCurlOutput('Could not extract query from CURL command', 'error');
+    }
+}
+
+async function executeCurlCommand(curlCommand) {
+    // Parse CURL command and convert to fetch request
+    try {
+        // Check if it's a JWT generation command
+        if (curlCommand.includes('/api/generate-jwt')) {
+            const clientIdMatch = curlCommand.match(/"client_id"\s*:\s*"([^"]+)"/);
+            const clientSecretMatch = curlCommand.match(/"client_secret"\s*:\s*"([^"]+)"/);
+
+            if (!clientIdMatch || !clientSecretMatch) {
+                throw new Error('Could not parse client credentials from CURL command');
+            }
+
+            const response = await fetch('/api/generate-jwt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    client_id: clientIdMatch[1],
+                    client_secret: clientSecretMatch[1]
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('authToken').value = data.token;
+                return `JWT Token generated: ${data.token_preview || data.token.substring(0, 50)}...`;
+            } else {
+                throw new Error(data.error || 'JWT generation failed');
+            }
+        }
+
+        // Check if it's a direct API call
+        else if (curlCommand.includes('platform.kore.ai')) {
+            const queryMatch = curlCommand.match(/"query"\s*:\s*"([^"]+)"/);
+            if (queryMatch) {
+                const query = queryMatch[1];
+                document.getElementById('searchQuery').value = query;
+
+                // Use the existing executeSearch function
+                executeSearch();
+                return `API call initiated with query: "${query}"`;
+            } else {
+                throw new Error('Could not extract query from CURL command');
+            }
+        }
+
+        else {
+            throw new Error('Unsupported CURL command format');
+        }
+
+    } catch (error) {
+        throw new Error(`Failed to execute CURL command: ${error.message}`);
+    }
+}
+
+function exportCurlCommands() {
+    if (allCurlCommands.length === 0) {
+        logToCurlOutput('No CURL commands to export. Generate some first!', 'warning');
+        return;
+    }
+
+    const exportData = {
+        exported_at: new Date().toISOString(),
+        total_commands: allCurlCommands.length,
+        environment: {
+            platform: navigator.platform,
+            user_agent: navigator.userAgent,
+            url: window.location.href,
+            timestamp: new Date().toISOString()
+        },
+        curl_commands: allCurlCommands
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `smart_assist_curl_commands_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    logToCurlOutput(`Exported ${allCurlCommands.length} CURL commands to JSON file`, 'success');
+}
+
+function refreshEnvironmentData() {
+    // Platform information
+    document.getElementById('envPlatform').textContent = navigator.platform || 'Unknown';
+
+    // User agent
+    document.getElementById('envUserAgent').textContent = navigator.userAgent.substring(0, 100) + '...';
+
+    // Screen resolution
+    document.getElementById('envScreen').textContent = `${screen.width}x${screen.height}`;
+
+    // Current time
+    document.getElementById('envTime').textContent = new Date().toLocaleString();
+
+    // Timezone
+    document.getElementById('envTimezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Current URL
+    document.getElementById('envURL').textContent = window.location.href;
+
+    // Referrer
+    document.getElementById('envReferrer').textContent = document.referrer || 'Direct access';
+
+    // Memory (if available)
+    if (navigator.deviceMemory) {
+        document.getElementById('envMemory').textContent = `${navigator.deviceMemory} GB`;
+    } else {
+        document.getElementById('envMemory').textContent = 'Not available';
+    }
+
+    // Connection (if available)
+    if (navigator.connection) {
+        document.getElementById('envConnection').textContent = `${navigator.connection.effectiveType || 'Unknown'} (${navigator.connection.downlink || 'Unknown'} Mbps)`;
+    } else {
+        document.getElementById('envConnection').textContent = 'Not available';
+    }
+
+    // Color depth
+    document.getElementById('envColorDepth').textContent = `${screen.colorDepth} bits`;
+
+    logToCurlOutput('Environment variables refreshed', 'info');
+}
+
+// Query Template Functions
+function useSelectedTemplate() {
+    const selector = document.getElementById('queryTemplateSelector');
+    const selectedValue = selector.value;
+    const selectedText = selector.options[selector.selectedIndex].text;
+
+    const descriptionDiv = document.getElementById('templateDescription');
+    const descriptionText = document.getElementById('templateDescriptionText');
+    const customQueryArea = document.getElementById('customQueryArea');
+
+    if (selectedValue === '') {
+        descriptionDiv.style.display = 'none';
+        customQueryArea.style.display = 'none';
+        return;
+    }
+
+    if (selectedValue === 'custom') {
+        descriptionDiv.style.display = 'none';
+        customQueryArea.style.display = 'block';
+        document.getElementById('customQueryInput').focus();
+        return;
+    }
+
+    // Show description for selected template
+    const descriptions = {
+        'How to prepare dark chocolate almond bars?': 'Query about recipe preparation steps and cooking instructions for chocolate almond bars.',
+        'What are the ingredients required to prepare banana bread?': 'Query to get the list of ingredients needed for banana bread recipe.',
+        'Which recipes require coconut whipped cream?': 'Search for recipes that use coconut whipped cream as an ingredient.',
+        'How long can I store chocolate mousse pie?': 'Query about food storage and shelf life information.',
+        'What are almonds rich in?': 'Nutritional information query about almond content and health benefits.',
+        'What are the food items rich in vitamin C?': 'Query about foods with high vitamin C content for nutrition guidance.',
+        'What should be the amount of water consumed per day?': 'Health query about daily water intake recommendations.',
+        'What are the healthy food tips?': 'General query for healthy eating advice and nutrition tips.',
+        'I have maple syrup with me. What can I do?': 'Ingredient-based query for recipe suggestions using maple syrup.',
+        'What are the vegan recipes that I can prepare?': 'Query for plant-based recipe options and vegan cooking ideas.'
+    };
+
+    const description = descriptions[selectedValue] || 'Selected query template for API testing.';
+    descriptionText.textContent = description;
+    descriptionDiv.style.display = 'block';
+    customQueryArea.style.display = 'none';
+
+    // Auto-generate CURL commands when template is selected
+    generateCurlCommandsForQuery(selectedValue);
+
+    logToCurlOutput(`Template selected and CURL commands generated: "${selectedText}"`, 'info');
+}
+
+function useTemplateQuery() {
+    const selector = document.getElementById('queryTemplateSelector');
+    const selectedValue = selector.value;
+
+    if (selectedValue === '') {
+        alert('Please select a query template first.');
+        return;
+    }
+
+    let queryText = '';
+
+    if (selectedValue === 'custom') {
+        queryText = document.getElementById('customQueryInput').value.trim();
+        if (!queryText) {
+            alert('Please enter a custom query.');
+            document.getElementById('customQueryInput').focus();
+            return;
+        }
+    } else {
+        queryText = selectedValue;
+    }
+
+    // Set the query in the main search field
+    document.getElementById('searchQuery').value = queryText;
+
+    // Auto-generate CURL commands for the selected query
+    generateCurlCommandsForQuery(queryText);
+
+    logToCurlOutput(`Query selected and CURL commands generated for: "${queryText}"`, 'success');
+
+    // Scroll to the search area
+    document.getElementById('searchQuery').scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('searchQuery').focus();
+
+    // Show success message
+    const successMsg = document.createElement('div');
+    successMsg.className = 'alert alert-success position-fixed';
+    successMsg.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    successMsg.innerHTML = `✅ Query ready with CURL commands: "${queryText.substring(0, 50)}${queryText.length > 50 ? '...' : ''}"`;
+    document.body.appendChild(successMsg);
+
+    setTimeout(() => {
+        if (successMsg && successMsg.parentNode) {
+            successMsg.parentNode.removeChild(successMsg);
+        }
+    }, 3000);
+}
+
+function clearQueryTemplate() {
+    document.getElementById('queryTemplateSelector').value = '';
+    document.getElementById('templateDescription').style.display = 'none';
+    document.getElementById('customQueryArea').style.display = 'none';
+    document.getElementById('customQueryInput').value = '';
+    logToCurlOutput('Query template selection cleared', 'info');
+}
+
+// Deploy to Cloud Function
+function deployToCloud() {
+    logToCurlOutput('Initiating cloud deployment...', 'info');
+
+    const deployModal = document.createElement('div');
+    deployModal.innerHTML = `
+        <div class="modal fade" id="deployModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-cloud-upload-alt"></i> Deploy to Cloud</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6>Choose Deployment Platform:</h6>
+                        <div class="d-grid gap-2 mb-3">
+                            <button class="btn btn-primary" onclick="deployTo('railway')">
+                                <i class="fas fa-train"></i> Deploy to Railway
+                            </button>
+                            <button class="btn btn-info" onclick="deployTo('render')">
+                                <i class="fas fa-server"></i> Deploy to Render
+                            </button>
+                            <button class="btn btn-success" onclick="deployTo('heroku')">
+                                <i class="fas fa-cloud"></i> Deploy to Heroku
+                            </button>
+                            <button class="btn btn-warning" onclick="deployTo('vercel')">
+                                <i class="fas fa-bolt"></i> Deploy to Vercel
+                            </button>
+                        </div>
+                        <div class="alert alert-info">
+                            <small><i class="fas fa-info-circle"></i>
+                            Deployment will create a public URL for your Smart Assist API tester.
+                            Make sure your Kore.ai credentials are properly configured.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(deployModal);
+
+    // Show modal using Bootstrap
+    const modal = new bootstrap.Modal(document.getElementById('deployModal'));
+    modal.show();
+
+    // Clean up modal when hidden
+    document.getElementById('deployModal').addEventListener('hidden.bs.modal', function () {
+        document.body.removeChild(deployModal);
+    });
+}
+
+function deployTo(platform) {
+    logToCurlOutput(`Deploying to ${platform.charAt(0).toUpperCase() + platform.slice(1)}...`, 'info');
+
+    const deploymentInstructions = {
+        railway: {
+            name: 'Railway',
+            url: 'https://railway.app',
+            steps: [
+                '1. Go to railway.app and sign up/login',
+                '2. Click "New Project" → "Deploy from GitHub repo"',
+                '3. Connect your GitHub account',
+                '4. Upload your SearchAI Assignment folder to GitHub',
+                '5. Select the repository in Railway',
+                '6. Railway will auto-deploy your Flask app',
+                '7. Your app will be live at: https://your-app.railway.app'
+            ]
+        },
+        render: {
+            name: 'Render',
+            url: 'https://render.com',
+            steps: [
+                '1. Go to render.com and sign up/login',
+                '2. Click "New" → "Web Service"',
+                '3. Connect GitHub and select your repo',
+                '4. Build Command: pip install -r requirements.txt',
+                '5. Start Command: python3 api_test_app.py',
+                '6. Click "Create Web Service"',
+                '7. Your app will be live at: https://your-app.onrender.com'
+            ]
+        },
+        heroku: {
+            name: 'Heroku',
+            url: 'https://heroku.com',
+            steps: [
+                '1. Go to heroku.com and sign up/login',
+                '2. Install Heroku CLI',
+                '3. Create Procfile: web: python3 api_test_app.py',
+                '4. Run: heroku create your-app-name',
+                '5. Run: git push heroku main',
+                '6. Your app will be live at: https://your-app.herokuapp.com'
+            ]
+        },
+        vercel: {
+            name: 'Vercel',
+            url: 'https://vercel.com',
+            steps: [
+                '1. Go to vercel.com and sign up/login',
+                '2. Click "New Project"',
+                '3. Import your GitHub repository',
+                '4. Vercel will auto-detect Flask',
+                '5. Click "Deploy"',
+                '6. Your app will be live at: https://your-app.vercel.app'
+            ]
+        }
+    };
+
+    const instruction = deploymentInstructions[platform];
+
+    alert(`🚀 ${instruction.name} Deployment Instructions:\\n\\n${instruction.steps.join('\\n')}\\n\\n📝 Platform URL: ${instruction.url}`);
+
+    logToCurlOutput(`${instruction.name} deployment instructions displayed`, 'success');
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('deployModal'));
+    modal.hide();
+}
+
+// Initialize environment data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    refreshEnvironmentData();
+    logToCurlOutput('CURL Command Generator initialized', 'success');
+    logToCurlOutput('Select a query template to generate CURL commands', 'info');
+});
+</script>
+{% endblock %}

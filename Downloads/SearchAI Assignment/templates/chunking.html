@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Chunking Strategy - Kore.ai Search AI Helper{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-cut"></i> Chunking Strategy Configuration</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Web Sources Strategy</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tr><td><strong>Chunk Size:</strong></td><td>{{ strategy.web_sources.chunk_size }}</td></tr>
+                                <tr><td><strong>Overlap:</strong></td><td>{{ strategy.web_sources.overlap }}</td></tr>
+                                <tr><td><strong>Method:</strong></td><td>{{ strategy.web_sources.method }}</td></tr>
+                            </table>
+                        </div>
+                        <h6>Metadata Extraction:</h6>
+                        <ul>
+                        {% for item in strategy.web_sources.metadata_extraction %}
+                            <li>{{ item }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>File Sources Strategy</h5>
+                        <div class="mb-3">
+                            <h6>PDF Strategy:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr><td><strong>Method:</strong></td><td>{{ strategy.file_sources.pdf_strategy.chunk_method }}</td></tr>
+                                    <tr><td><strong>Preserve Headings:</strong></td><td>{{ strategy.file_sources.pdf_strategy.preserve_headings }}</td></tr>
+                                    <tr><td><strong>Chunk Size:</strong></td><td>{{ strategy.file_sources.pdf_strategy.chunk_size }}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h6>Text Strategy:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr><td><strong>Chunk Size:</strong></td><td>{{ strategy.file_sources.text_strategy.chunk_size }}</td></tr>
+                                    <tr><td><strong>Overlap:</strong></td><td>{{ strategy.file_sources.text_strategy.overlap }}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
