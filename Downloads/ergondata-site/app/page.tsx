@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { PricingSection } from "@/components/pricing-section"
 import { AIDemoSection } from "@/components/ai-demo-section"
 import { DataAnalysisDashboard } from "@/components/data-analysis-dashboard"
-import { AIFirstSection } from "@/components/ai-first-section"
+import Link from "next/link"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("todos")
@@ -391,9 +391,6 @@ export default function Home() {
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-pink-400/40 rounded-full blur-3xl animate-float animation-delay-2000" />
         <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-cyan-400/40 rounded-full blur-3xl animate-float animation-delay-4000" />
       </section>
-
-      {/* AI First Section */}
-      <AIFirstSection />
 
       <section id="ergon-lab" className="bg-gray-50 px-6 py-20">
         <div className="container mx-auto max-w-5xl">
@@ -912,6 +909,64 @@ export default function Home() {
 
       {/* AI Demo Section */}
       <AIDemoSection />
+
+      {/* AI First CTA Card */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 px-6 py-20">
+        {/* Animated background */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+          <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-cyan-400 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+        </div>
+
+        <div className="container mx-auto max-w-4xl relative z-10">
+          <div className="text-center">
+            {/* Badge */}
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-6 py-2 text-sm font-semibold text-white backdrop-blur-md border-2 border-white/40">
+              <Sparkles className="h-4 w-4 text-yellow-300" />
+              <span>TRANSFORMAÇÃO DIGITAL</span>
+            </div>
+
+            {/* Title */}
+            <h2 className="mb-6 text-4xl font-extrabold text-white md:text-5xl lg:text-6xl">
+              Leve Sua Equipe Financeira ao AI First
+            </h2>
+
+            {/* Subtitle */}
+            <p className="mb-8 text-xl text-white/90 max-w-2xl mx-auto font-light">
+              Descubra como automatizar processos, eliminar trabalho manual e tomar decisões mais inteligentes com IA
+            </p>
+
+            {/* CTA Button */}
+            <Link href="/ai-first">
+              <Button
+                size="lg"
+                className="group h-14 px-8 text-lg font-bold bg-white text-purple-700 hover:bg-gray-100 hover:scale-105 transition-all shadow-2xl"
+              >
+                <Sparkles className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />
+                Explore a Solução AI First
+                <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+              </Button>
+            </Link>
+
+            {/* Features badges */}
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm text-white/80">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-400" />
+                <span>Economia de até 80% do tempo</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-blue-400" />
+                <span>Precisão aumentada</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-yellow-400" />
+                <span>Insights em tempo real</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Data Analysis Dashboard */}
       <DataAnalysisDashboard />
