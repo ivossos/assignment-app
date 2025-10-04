@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { PricingSection } from "@/components/pricing-section"
 import { AIDemoSection } from "@/components/ai-demo-section"
 import { DataAnalysisDashboard } from "@/components/data-analysis-dashboard"
+import { AIFirstSection } from "@/components/ai-first-section"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("todos")
@@ -390,6 +391,9 @@ export default function Home() {
         <div className="absolute bottom-20 right-10 w-80 h-80 bg-pink-400/40 rounded-full blur-3xl animate-float animation-delay-2000" />
         <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-cyan-400/40 rounded-full blur-3xl animate-float animation-delay-4000" />
       </section>
+
+      {/* AI First Section */}
+      <AIFirstSection />
 
       <section id="ergon-lab" className="bg-gray-50 px-6 py-20">
         <div className="container mx-auto max-w-5xl">
