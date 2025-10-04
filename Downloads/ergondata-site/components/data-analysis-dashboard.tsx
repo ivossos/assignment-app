@@ -32,18 +32,61 @@ export function DataAnalysisDashboard() {
   ]
 
   const parseCSV = (text: string) => {
-    const lines = text.split("\n").filter((line) => line.trim())
+    // Parse CSV corretamente, lidando com vírgulas dentro de aspas
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = []
+      let current = ""
+      let inQuotes = false
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i]
+        const nextChar = line[i + 1]
+
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            // Aspas duplas escapadas
+            current += '"'
+            i++ // pula a próxima aspa
+          } else {
+            // Alterna estado de aspas
+            inQuotes = !inQuotes
+          }
+        } else if (char === ',' && !inQuotes) {
+          // Fim do campo
+          result.push(current.trim())
+          current = ""
+        } else {
+          current += char
+        }
+      }
+
+      // Adiciona o último campo
+      result.push(current.trim())
+      return result
+    }
+
+    const lines = text.split(/\r?\n/).filter((line) => line.trim())
     if (lines.length === 0) return []
 
-    const headers = lines[0].split(",").map((h) => h.trim())
-    const data = lines.slice(1).map((line) => {
-      const values = line.split(",").map((v) => v.trim())
+    const headers = parseCSVLine(lines[0]).map((h) => h.replace(/^["']|["']$/g, '').trim())
+    console.log('[CSV Parser] Headers encontrados:', headers)
+    console.log('[CSV Parser] Total de linhas:', lines.length - 1)
+
+    const data = lines.slice(1).map((line, index) => {
+      const values = parseCSVLine(line).map((v) => v.replace(/^["']|["']$/g, '').trim())
       const row: any = {}
-      headers.forEach((header, index) => {
-        row[header] = values[index] || ""
+      headers.forEach((header, headerIndex) => {
+        row[header] = values[headerIndex] || ""
       })
       return row
+    }).filter(row => {
+      // Remove linhas completamente vazias
+      return Object.values(row).some(val => val !== "")
     })
+
+    console.log('[CSV Parser] Registros processados:', data.length)
+    console.log('[CSV Parser] Amostra dos primeiros 3 registros:', data.slice(0, 3))
+
     return data
   }
 
@@ -56,10 +99,17 @@ export function DataAnalysisDashboard() {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer)
           const workbook = XLSX.read(data, { type: "array" })
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+          const sheetName = workbook.SheetNames[0]
+          const firstSheet = workbook.Sheets[sheetName]
           const jsonData = XLSX.utils.sheet_to_json(firstSheet)
+
+          console.log('[Excel Parser] Planilha:', sheetName)
+          console.log('[Excel Parser] Registros encontrados:', jsonData.length)
+          console.log('[Excel Parser] Amostra dos primeiros 3 registros:', jsonData.slice(0, 3))
+
           resolve(jsonData)
         } catch (error) {
+          console.error('[Excel Parser] Erro ao processar:', error)
           reject(error)
         }
       }
@@ -74,19 +124,26 @@ export function DataAnalysisDashboard() {
 
     try {
       const fileExtension = file.name.split(".").pop()?.toLowerCase()
+      let data: any[] = []
 
       if (fileExtension === "csv") {
         const text = await file.text()
-        const data = parseCSV(text)
-        setParsedData(data)
-        setUploadedFile(file)
+        data = parseCSV(text)
       } else if (fileExtension === "xlsx" || fileExtension === "xls") {
-        const data = (await parseExcel(file)) as any[]
-        setParsedData(data)
-        setUploadedFile(file)
+        data = (await parseExcel(file)) as any[]
       } else {
         setFileError("Formato de arquivo não suportado. Use CSV ou Excel (.xlsx, .xls)")
+        return
       }
+
+      if (data.length === 0) {
+        setFileError("Arquivo vazio ou sem dados válidos")
+        return
+      }
+
+      setParsedData(data)
+      setUploadedFile(file)
+      console.log(`✅ Arquivo carregado com sucesso: ${data.length} registros`)
     } catch (error) {
       console.error("[v0] File parsing error:", error)
       setFileError("Erro ao processar arquivo. Verifique o formato e tente novamente.")
@@ -199,22 +256,26 @@ export function DataAnalysisDashboard() {
 
       setDashboardCode(result.dashboardCode)
 
-      // Abrir Claude.ai em nova aba com o código do dashboard
-      const claudePrompt = `Crie um dashboard interativo React com os seguintes dados e código:
-
-${result.dashboardCode}
-
-Use React, Recharts para gráficos, e Tailwind CSS para estilização. O dashboard deve ser responsivo e interativo.`
-
-      const claudeUrl = `https://claude.ai/new?q=${encodeURIComponent(claudePrompt)}`
-      window.open(claudeUrl, '_blank')
-
     } catch (err) {
       console.error("[v0] Dashboard generation error:", err)
       setDashboardError(err instanceof Error ? err.message : "Erro ao gerar dashboard")
     } finally {
       setIsGeneratingDashboard(false)
     }
+  }
+
+  const openInClaude = () => {
+    const claudePrompt = `Crie um dashboard interativo React com Recharts baseado neste código:
+
+${dashboardCode}
+
+Por favor, gere um componente React funcional completo e interativo.`
+
+    const claudeUrl = `https://claude.ai/new`
+    window.open(claudeUrl, '_blank')
+
+    // Copiar automaticamente para clipboard
+    navigator.clipboard.writeText(claudePrompt)
   }
 
   return (
@@ -279,8 +340,8 @@ Use React, Recharts para gráficos, e Tailwind CSS para estilização. O dashboa
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900">{uploadedFile.name}</p>
-                    <p className="text-sm text-gray-600">
-                      {parsedData.length} linhas • {Object.keys(parsedData[0] || {}).length} colunas
+                    <p className="text-sm text-green-700 font-medium">
+                      ✓ {parsedData.length.toLocaleString('pt-BR')} registros carregados • {Object.keys(parsedData[0] || {}).length} colunas
                     </p>
                   </div>
                 </div>
@@ -417,8 +478,7 @@ Use React, Recharts para gráficos, e Tailwind CSS para estilização. O dashboa
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-5 w-5" />
-                    Criar Dashboard no Claude AI
-                    <ExternalLink className="ml-2 h-4 w-4" />
+                    Gerar Código do Dashboard
                   </>
                 )}
               </Button>
@@ -433,6 +493,69 @@ Use React, Recharts para gráficos, e Tailwind CSS para estilização. O dashboa
               <Button variant="outline" onClick={() => setAnalysis("")}>
                 Nova Análise
               </Button>
+            </div>
+          </Card>
+        )}
+
+        {/* Dashboard Code Section */}
+        {dashboardCode && (
+          <Card className="mt-8 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-pink-50 p-8">
+            <div className="mb-6 flex items-center gap-3">
+              <Sparkles className="h-6 w-6 text-purple-600" />
+              <h3 className="text-2xl font-semibold text-gray-900">Código do Dashboard Gerado</h3>
+            </div>
+
+            <div className="mb-6 rounded-lg bg-white p-4 border-2 border-purple-200">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="text-sm font-semibold text-gray-700">
+                  📋 Código React + Recharts + Tailwind CSS
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigator.clipboard.writeText(dashboardCode)}
+                >
+                  Copiar Código
+                </Button>
+              </div>
+              <div className="max-h-[400px] overflow-y-auto rounded-lg bg-gray-900 p-4">
+                <pre className="text-xs text-green-400 font-mono">{dashboardCode}</pre>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
+                onClick={openInClaude}
+              >
+                <ExternalLink className="mr-2 h-5 w-5" />
+                Abrir Claude AI e Colar Código
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setDashboardCode("")}
+              >
+                Fechar
+              </Button>
+            </div>
+
+            <div className="mt-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-blue-100 p-2">
+                  <AlertTriangle className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-blue-900 mb-2">Como usar:</h4>
+                  <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                    <li>Clique em "Abrir Claude AI e Colar Código" (código já copiado!)</li>
+                    <li>Cole (Ctrl+V / Cmd+V) no chat do Claude</li>
+                    <li>Claude gerará um dashboard interativo ao vivo</li>
+                    <li>Você pode pedir ajustes e melhorias diretamente no Claude</li>
+                  </ol>
+                </div>
+              </div>
             </div>
           </Card>
         )}
