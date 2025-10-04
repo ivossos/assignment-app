@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ergondata-site:
     build:
@@ -9,9 +7,7 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - GOOGLE_GENERATIVE_AI_API_KEY=${GOOGLE_GENERATIVE_AI_API_KEY}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    env_file:
-      - .env.local
+      - GOOGLE_GENERATIVE_AI_API_KEY=AIzaSyDar5-PpYWclMEyWwngvaej3nJipqBa_3A
+      - GEMINI_API_KEY=AIzaSyDar5-PpYWclMEyWwngvaej3nJipqBa_3A
     restart: unless-stopped
     container_name: ergondata-site

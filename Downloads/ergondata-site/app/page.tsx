@@ -11,6 +11,7 @@ import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { PricingSection } from "@/components/pricing-section"
 import { AIDemoSection } from "@/components/ai-demo-section"
+import { DataAnalysisDashboard } from "@/components/data-analysis-dashboard"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("todos")
@@ -907,6 +908,9 @@ export default function Home() {
 
       {/* AI Demo Section */}
       <AIDemoSection />
+
+      {/* Data Analysis Dashboard */}
+      <DataAnalysisDashboard />
 
       {/* Pricing Section */}
       <PricingSection />
