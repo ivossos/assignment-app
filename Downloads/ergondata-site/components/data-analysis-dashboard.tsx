@@ -2,7 +2,7 @@
 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Upload, X, Loader2, Brain, BarChart3, TrendingUp, AlertTriangle } from "lucide-react"
+import { Upload, X, Loader2, Brain, BarChart3, TrendingUp, AlertTriangle, Sparkles, ExternalLink } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +17,10 @@ export function DataAnalysisDashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisError, setAnalysisError] = useState("")
   const [selectedModel, setSelectedModel] = useState("auto")
+
+  const [dashboardCode, setDashboardCode] = useState("")
+  const [isGeneratingDashboard, setIsGeneratingDashboard] = useState(false)
+  const [dashboardError, setDashboardError] = useState("")
 
   const analysisModels = [
     { id: "auto", name: "Análise Automática", description: "O LLM decide o melhor modelo" },
@@ -163,6 +167,53 @@ export function DataAnalysisDashboard() {
       setAnalysisError(err instanceof Error ? err.message : "Erro ao analisar dados")
     } finally {
       setIsAnalyzing(false)
+    }
+  }
+
+  const handleGenerateDashboard = async () => {
+    if (!parsedData || parsedData.length === 0) {
+      setDashboardError("Nenhum dado disponível para criar dashboard.")
+      return
+    }
+
+    setIsGeneratingDashboard(true)
+    setDashboardError("")
+    setDashboardCode("")
+
+    try {
+      const response = await fetch("/api/generate-dashboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: parsedData,
+          analysis: analysis,
+          modelType: selectedModel,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erro ao gerar dashboard")
+      }
+
+      setDashboardCode(result.dashboardCode)
+
+      // Abrir Claude.ai em nova aba com o código do dashboard
+      const claudePrompt = `Crie um dashboard interativo React com os seguintes dados e código:
+
+${result.dashboardCode}
+
+Use React, Recharts para gráficos, e Tailwind CSS para estilização. O dashboard deve ser responsivo e interativo.`
+
+      const claudeUrl = `https://claude.ai/new?q=${encodeURIComponent(claudePrompt)}`
+      window.open(claudeUrl, '_blank')
+
+    } catch (err) {
+      console.error("[v0] Dashboard generation error:", err)
+      setDashboardError(err instanceof Error ? err.message : "Erro ao gerar dashboard")
+    } finally {
+      setIsGeneratingDashboard(false)
     }
   }
 
@@ -351,7 +402,26 @@ export function DataAnalysisDashboard() {
               <pre className="whitespace-pre-wrap text-sm leading-relaxed text-gray-800">{analysis}</pre>
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700"
+                onClick={handleGenerateDashboard}
+                disabled={isGeneratingDashboard}
+              >
+                {isGeneratingDashboard ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Gerando Dashboard...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Criar Dashboard no Claude AI
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => {
