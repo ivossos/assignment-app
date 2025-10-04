@@ -910,6 +910,9 @@ export default function Home() {
       {/* AI Demo Section */}
       <AIDemoSection />
 
+      {/* Data Analysis Dashboard */}
+      <DataAnalysisDashboard />
+
       {/* AI First CTA Card */}
       <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-800 px-6 py-20">
         {/* Animated background */}
@@ -967,9 +970,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Data Analysis Dashboard */}
-      <DataAnalysisDashboard />
 
       {/* Pricing Section */}
       <PricingSection />
