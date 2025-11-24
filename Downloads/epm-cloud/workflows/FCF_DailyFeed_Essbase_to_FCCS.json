@@ -1,0 +1,306 @@
+{
+    "name": "FCF_DailyFeed_Essbase_to_FCCS",
+    "description": "Extract FCF projections from Essbase and update FCCS daily",
+    "active": true,
+    "nodes": [
+        {
+            "id": "1",
+            "name": "Schedule Trigger",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "position": [
+                250,
+                150
+            ],
+            "parameters": {
+                "interval": [
+                    1
+                ],
+                "unit": "days",
+                "triggerAtStartup": false,
+                "timezone": "America/Sao_Paulo"
+            }
+        },
+        {
+            "id": "2",
+            "name": "Query Essbase - FCF Data",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                450,
+                150
+            ],
+            "parameters": {
+                "authentication": "basicAuth",
+                "method": "POST",
+                "url": "{{ $env.ESSBASE_API_URL }}/essbase/api/v1/query",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "queryType": "mdx",
+                    "query": "SELECT {[Account].[FCF_Year1], [Account].[FCF_Year2], [Account].[FCF_Year3], [Account].[FCF_Year4], [Account].[FCF_Year5]} ON COLUMNS, {[Entity].[TechStartUpBR_Acq]} ON ROWS FROM ConsData WHERE ([Scenario].[Actual], [Period].[Actual])",
+                    "returnFormat": "dense"
+                }
+            }
+        },
+        {
+            "id": "3",
+            "name": "Parse Essbase Response",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                650,
+                150
+            ],
+            "parameters": {
+                "language": "javascript",
+                "code": "// Parse Essbase MDX response\nconst response = $node['Query Essbase - FCF Data'].json();\n\nif (!response.data || !response.data[0]) {\n  throw new Error('No FCF data returned from Essbase');\n}\n\nconst row = response.data[0];\n\nconst fcfData = {\n  fcf_year1: parseFloat(row[0]) || 0,\n  fcf_year2: parseFloat(row[1]) || 0,\n  fcf_year3: parseFloat(row[2]) || 0,\n  fcf_year4: parseFloat(row[3]) || 0,\n  fcf_year5: parseFloat(row[4]) || 0,\n  extractedAt: new Date().toISOString(),\n  totalFCF: (parseFloat(row[0]) + parseFloat(row[1]) + parseFloat(row[2]) + parseFloat(row[3]) + parseFloat(row[4])) || 0\n};\n\nreturn fcfData;"
+            }
+        },
+        {
+            "id": "4",
+            "name": "Validate FCF Data",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                850,
+                150
+            ],
+            "parameters": {
+                "language": "javascript",
+                "code": "// Validation rules for FCF data\nconst fcf = $node['Parse Essbase Response'].json();\n\nconst validationRules = [\n  {\n    name: 'All FCF positive',\n    test: () => [fcf.fcf_year1, fcf.fcf_year2, fcf.fcf_year3, fcf.fcf_year4, fcf.fcf_year5].every(x => x >= 0),\n    message: 'FCF values must be non-negative'\n  },\n  {\n    name: 'FCF within bounds',\n    test: () => [fcf.fcf_year1, fcf.fcf_year2, fcf.fcf_year3, fcf.fcf_year4, fcf.fcf_year5].every(x => x <= 1000),\n    message: 'FCF values should not exceed 1000k'\n  },\n  {\n    name: 'Total FCF reasonable',\n    test: () => fcf.totalFCF > 0 && fcf.totalFCF <= 5000,\n    message: 'Total FCF should be between 0 and 5000k'\n  },\n  {\n    name: 'Year-over-year growth reasonable',\n    test: () => {\n      const growth2 = fcf.fcf_year2 / fcf.fcf_year1;\n      const growth3 = fcf.fcf_year3 / fcf.fcf_year2;\n      return growth2 <= 1.5 && growth3 <= 1.5; // Max 50% YoY growth\n    },\n    message: 'Year-over-year growth seems unreasonable (> 50%)'\n  }\n];\n\nconst results = validationRules.map(rule => ({\n  name: rule.name,\n  passed: rule.test(),\n  message: rule.message\n}));\n\nconst allPassed = results.every(r => r.passed);\n\nreturn {\n  validationResults: results,\n  allPassed: allPassed,\n  fcfData: fcf,\n  status: allPassed ? 'VALID' : 'INVALID'\n};"
+            }
+        },
+        {
+            "id": "5",
+            "name": "IF Validation Passed",
+            "type": "n8n-nodes-base.if",
+            "position": [
+                1050,
+                150
+            ],
+            "parameters": {
+                "conditions": {
+                    "nodeInput": "first",
+                    "pass": "any",
+                    "rules": [
+                        {
+                            "type": "boolean",
+                            "value": "{{ $node['Validate FCF Data'].json().allPassed }}",
+                            "operation": "true"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "6",
+            "name": "Update FCCS - FCF Values",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1250,
+                50
+            ],
+            "parameters": {
+                "authentication": "oauth2",
+                "method": "POST",
+                "url": "{{ $env.FCCS_API_URL }}/api/v1/data",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "entity": "TechStartUpBR_Acq",
+                    "period": "Actual",
+                    "scenario": "Actual",
+                    "updates": [
+                        {
+                            "account": "12001",
+                            "value": "{{ $node['Validate FCF Data'].json().fcfData.fcf_year1 }}"
+                        },
+                        {
+                            "account": "12002",
+                            "value": "{{ $node['Validate FCF Data'].json().fcfData.fcf_year2 }}"
+                        },
+                        {
+                            "account": "12003",
+                            "value": "{{ $node['Validate FCF Data'].json().fcfData.fcf_year3 }}"
+                        },
+                        {
+                            "account": "12004",
+                            "value": "{{ $node['Validate FCF Data'].json().fcfData.fcf_year4 }}"
+                        },
+                        {
+                            "account": "12005",
+                            "value": "{{ $node['Validate FCF Data'].json().fcfData.fcf_year5 }}"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "id": "7",
+            "name": "Trigger Business Rule - Impairment",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                1250,
+                150
+            ],
+            "parameters": {
+                "authentication": "oauth2",
+                "method": "POST",
+                "url": "{{ $env.FCCS_API_URL }}/api/v1/businessRules/execute",
+                "headers": {
+                    "Content-Type": "application/json"
+                },
+                "body": {
+                    "ruleName": "BR_Impairment_DCFCalculation",
+                    "entity": "TechStartUpBR_Acq",
+                    "period": "Actual",
+                    "scenario": "Actual",
+                    "async": false,
+                    "waitForCompletion": true,
+                    "timeout": 600000
+                }
+            }
+        },
+        {
+            "id": "8",
+            "name": "Log Success",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                1450,
+                150
+            ],
+            "parameters": {
+                "language": "javascript",
+                "code": "const fcf = $node['Validate FCF Data'].json().fcfData;\nconst updateResult = $node['Update FCCS - FCF Values'].json();\nconst ruleResult = $node['Trigger Business Rule - Impairment'].json();\n\nconst logEntry = {\n  timestamp: new Date().toISOString(),\n  workflowId: $workflow.id,\n  status: 'SUCCESS',\n  fcfData: fcf,\n  fccsUpdateStatus: updateResult.status,\n  businessRuleStatus: ruleResult.status,\n  impairmentAmount: ruleResult.result?.impairmentAmount || 0,\n  message: `FCF updated successfully. Impairment test executed. Margin of Safety: ${ruleResult.result?.marginOfSafety || 'N/A'}%`\n};\n\n// In production, save to database or logging service\nconsole.log('FCF Update Success Log:', JSON.stringify(logEntry, null, 2));\n\nreturn logEntry;"
+            }
+        },
+        {
+            "id": "9",
+            "name": "Notify Finance Team",
+            "type": "n8n-nodes-base.emailSend",
+            "position": [
+                1650,
+                150
+            ],
+            "parameters": {
+                "fromEmail": "{{ $env.EMAIL_FROM }}",
+                "toEmail": "{{ $env.FINANCE_TEAM_EMAIL }}",
+                "subject": "✓ FCF Feed Updated - FCCS Impairment Test Completed",
+                "emailType": "html",
+                "htmlBody": "<h2>FCF Daily Feed Completed</h2>\n<p><strong>Status:</strong> ✓ SUCCESS</p>\n<h3>FCF Values Updated:</h3>\n<ul>\n  <li>Year 1: {{ $node['Validate FCF Data'].json().fcfData.fcf_year1 }}k</li>\n  <li>Year 2: {{ $node['Validate FCF Data'].json().fcfData.fcf_year2 }}k</li>\n  <li>Year 3: {{ $node['Validate FCF Data'].json().fcfData.fcf_year3 }}k</li>\n  <li>Year 4: {{ $node['Validate FCF Data'].json().fcfData.fcf_year4 }}k</li>\n  <li>Year 5: {{ $node['Validate FCF Data'].json().fcfData.fcf_year5 }}k</li>\n  <li><strong>Total:</strong> {{ $node['Validate FCF Data'].json().fcfData.totalFCF }}k</li>\n</ul>\n<h3>Impairment Test Result:</h3>\n<p>Impairment Amount: {{ $node['Trigger Business Rule - Impairment'].json().result.impairmentAmount }}k</p>\n<p>Status: {{ $node['Trigger Business Rule - Impairment'].json().result.status }}</p>\n<p>Margin of Safety: {{ $node['Trigger Business Rule - Impairment'].json().result.marginOfSafety }}%</p>\n<p><em>Extracted: {{ $node['Validate FCF Data'].json().fcfData.extractedAt }}</em></p>"
+            }
+        },
+        {
+            "id": "10",
+            "name": "Handle Validation Error",
+            "type": "n8n-nodes-base.emailSend",
+            "position": [
+                1250,
+                300
+            ],
+            "parameters": {
+                "fromEmail": "{{ $env.EMAIL_FROM }}",
+                "toEmail": "{{ $env.ADMIN_EMAIL }}",
+                "subject": "⚠️ FCF Feed Validation Failed - Manual Review Required",
+                "emailType": "html",
+                "htmlBody": "<h2>FCF Feed Validation Failed</h2>\n<p><strong>Status:</strong> ⚠️ VALIDATION ERROR</p>\n<h3>Validation Details:</h3>\n<pre>{{ JSON.stringify($node['Validate FCF Data'].json().validationResults, null, 2) }}</pre>\n<h3>FCF Values Received:</h3>\n<pre>{{ JSON.stringify($node['Validate FCF Data'].json().fcfData, null, 2) }}</pre>\n<p><strong>Action Required:</strong> Review Essbase data and re-run workflow manually</p>\n<p><em>Timestamp: {{ new Date().toISOString() }}</em></p>"
+            }
+        }
+    ],
+    "connections": {
+        "1": {
+            "main": [
+                [
+                    {
+                        "node": "2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "2": {
+            "main": [
+                [
+                    {
+                        "node": "3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "3": {
+            "main": [
+                [
+                    {
+                        "node": "4",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "4": {
+            "main": [
+                [
+                    {
+                        "node": "5",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "5": {
+            "main": [
+                [
+                    {
+                        "node": "6",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "10",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "6": {
+            "main": [
+                [
+                    {
+                        "node": "7",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "7": {
+            "main": [
+                [
+                    {
+                        "node": "8",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "8": {
+            "main": [
+                [
+                    {
+                        "node": "9",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

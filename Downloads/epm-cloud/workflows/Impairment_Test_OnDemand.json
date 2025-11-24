@@ -1,0 +1,108 @@
+{
+    "name": "Impairment_Test_OnDemand",
+    "description": "Trigger impairment test manually with custom scenario",
+    "active": true,
+    "nodes": [
+        {
+            "id": "1",
+            "name": "Webhook Trigger",
+            "type": "n8n-nodes-base.webhookTrigger",
+            "position": [
+                250,
+                150
+            ],
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "impairment-test-trigger"
+            }
+        },
+        {
+            "id": "2",
+            "name": "Validate Request Payload",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                450,
+                150
+            ],
+            "parameters": {
+                "language": "javascript",
+                "code": "const body = $node.webhookData.body;\n\nconst required = ['scenario', 'discountRate', 'residualGrowth'];\nconst missing = required.filter(field => !(field in body));\n\nif (missing.length > 0) {\n  throw new Error(`Missing required fields: ${missing.join(', ')}`);\n}\n\nconst validScenarios = ['Base', 'Pessimistic', 'Optimistic', 'Stress_HighRate'];\nif (!validScenarios.includes(body.scenario)) {\n  throw new Error(`Invalid scenario. Must be one of: ${validScenarios.join(', ')}`);\n}\n\nif (body.discountRate < 5 || body.discountRate > 20) {\n  throw new Error('Discount rate must be between 5% and 20%');\n}\n\nif (body.residualGrowth < 0 || body.residualGrowth > 6) {\n  throw new Error('Residual growth must be between 0% and 6%');\n}\n\nreturn {\n  scenario: body.scenario,\n  discountRate: parseFloat(body.discountRate),\n  residualGrowth: parseFloat(body.residualGrowth),\n  requestedBy: body.requestedBy || 'API',\n  timestamp: new Date().toISOString()\n};"
+            }
+        },
+        {
+            "id": "3",
+            "name": "Execute FCCS Impairment Rule",
+            "type": "n8n-nodes-base.httpRequest",
+            "position": [
+                650,
+                150
+            ],
+            "parameters": {
+                "authentication": "oauth2",
+                "method": "POST",
+                "url": "{{ $env.FCCS_API_URL }}/api/v1/businessRules/execute",
+                "body": {
+                    "ruleName": "BR_Impairment_DCFCalculation",
+                    "entity": "TechStartUpBR_Acq",
+                    "period": "Actual",
+                    "scenario": "{{ $node['Validate Request Payload'].json().scenario }}",
+                    "parameters": {
+                        "discountRate": "{{ $node['Validate Request Payload'].json().discountRate }}",
+                        "residualGrowth": "{{ $node['Validate Request Payload'].json().residualGrowth }}"
+                    },
+                    "async": false,
+                    "waitForCompletion": true,
+                    "timeout": 600000
+                }
+            }
+        },
+        {
+            "id": "4",
+            "name": "Return Results",
+            "type": "n8n-nodes-base.code",
+            "position": [
+                850,
+                150
+            ],
+            "parameters": {
+                "language": "javascript",
+                "code": "const result = $node['Execute FCCS Impairment Rule'].json();\n\nreturn {\n  success: true,\n  impairmentTest: {\n    scenario: $node['Validate Request Payload'].json().scenario,\n    discountRate: $node['Validate Request Payload'].json().discountRate + '%',\n    residualGrowth: $node['Validate Request Payload'].json().residualGrowth + '%',\n    valueInUse: result.result?.valueInUse || 0,\n    bookValue: result.result?.bookValue || 0,\n    impairmentAmount: result.result?.impairmentAmount || 0,\n    marginOfSafety: result.result?.marginOfSafety || 0 + '%',\n    status: result.result?.impairmentAmount > 0 ? 'IMPAIRMENT_REQUIRED' : 'NO_IMPAIRMENT',\n    executedAt: new Date().toISOString(),\n    executionTime: result.executionTime + 'ms'\n  }\n};"
+            }
+        }
+    ],
+    "connections": {
+        "1": {
+            "main": [
+                [
+                    {
+                        "node": "2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "2": {
+            "main": [
+                [
+                    {
+                        "node": "3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "3": {
+            "main": [
+                [
+                    {
+                        "node": "4",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

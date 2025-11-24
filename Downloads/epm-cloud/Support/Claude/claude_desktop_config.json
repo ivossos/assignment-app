@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "oracle-fccs": {
+      "command": "node",
+      "args": [
+        "/Users/ioannisvossos/Downloads/epm-cloud/build/index.js"
+      ],
+      "env": {
+        "FCCS_MOCK_MODE": "true"
+      }
+    }
+  }
+}

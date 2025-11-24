@@ -1,0 +1,67 @@
+# Task: Create MCP Server for Oracle EPM Cloud FCCS
+
+- [x] Project Initialization <!-- id: 0 -->
+    - [x] Initialize Node.js project (TypeScript) <!-- id: 1 -->
+    - [x] Install dependencies (`@modelcontextprotocol/sdk`, `axios`, `dotenv`, `zod`, etc.) <!-- id: 2 -->
+    - [x] Configure TypeScript (`tsconfig.json`) <!-- id: 3 -->
+    - [x] Set up project structure (`src/`, `build/`, etc.) <!-- id: 4 -->
+- [x] Configuration & Authentication <!-- id: 5 -->
+    - [x] Create configuration handler (env vars for URL, User, Pass/Token) <!-- id: 6 -->
+    - [x] Implement FCCS Client class with Axios <!-- id: 7 -->
+    - [x] Implement Basic Auth / Token handling <!-- id: 8 -->
+    - [x] Implement connection validation/ping <!-- id: 9 -->
+- [/] Core MCP Server Setup <!-- id: 10 -->
+    - [x] Setup MCP Server instance <!-- id: 11 -->
+    - [ ] Define resource handlers (if applicable, e.g., logs) <!-- id: 12 -->
+- [/] Tool Implementation: Data & Metadata <!-- id: 13 -->
+    - [x] Implement `get_applications` tool <!-- id: 14 -->
+    - [ ] Implement `get_dimensions` tool <!-- id: 15 -->
+    - [x] Implement `run_mdx_query` tool <!-- id: 16 -->
+- [x] Tool Implementation: Operations <!-- id: 17 -->
+    - [x] Implement `run_business_rule` tool <!-- id: 18 -->
+    - [x] Implement `run_consolidation` tool <!-- id: 19 -->
+    - [x] Implement `get_job_status` tool <!-- id: 20 -->
+- [ ] Tool Implementation: Reporting (Optional/Basic) <!-- id: 21 -->
+    - [ ] Implement `generate_report` (if API available/simple) <!-- id: 22 -->
+- [x] Verification & Testing <!-- id: 23 -->
+    - [x] Create a test script or instructions for manual testing <!-- id: 24 -->
+    - [x] Verify against mock or real endpoint (if provided) <!-- id: 25 -->
+- [x] Feature Expansion & Mock Refinement <!-- id: 26 -->
+    - [x] Implement `get_dimensions` tool <!-- id: 15 -->
+    - [x] Implement `generate_report` tool <!-- id: 22 -->
+    - [x] Enhance mock data (dimensions, reports, more realistic jobs) <!-- id: 27 -->
+- [x] Localization <!-- id: 28 -->
+    - [x] Add `FCCS_LANGUAGE` to config <!-- id: 29 -->
+    - [x] Localize mock data in `fccs-client.ts` <!-- id: 30 -->
+    - [x] Create `examples_pt.md` <!-- id: 31 -->
+    - [x] Add advanced examples (CTA, Intercompany) to `examples_pt.md` <!-- id: 32 -->
+- [x] M&A Simulation Features <!-- id: 33 -->
+    - [x] Implement `simulate_transaction` tool (Acquisition/Divestiture) <!-- id: 34 -->
+    - [x] Add M&A mock logic to `fccs-client.ts` <!-- id: 35 -->
+    - [x] Add M&A examples to `examples_pt.md` <!-- id: 36 -->
+- [x] Real Life Scenarios <!-- id: 37 -->
+    - [x] Add storytelling scenarios to `examples_pt.md` <!-- id: 38 -->
+- [x] Support Tasks <!-- id: 39 -->
+    - [x] Create n8n workflow JSON files <!-- id: 40 -->
+- [x] Remote Server Configuration <!-- id: 41 -->
+    - [x] Install `express` dependencies <!-- id: 42 -->
+    - [x] Implement SSE transport in `src/index.ts` <!-- id: 43 -->
+    - [x] Update documentation for remote usage <!-- id: 44 -->
+- [ ] ChatGPT Integration (REST API) <!-- id: 45 -->
+    - [ ] Add REST endpoints for tools in `src/index.ts` <!-- id: 46 -->
+    - [ ] Implement `GET /openapi.json` generator <!-- id: 47 -->
+    - [x] Implement `GET /openapi.json` generator <!-- id: 47 -->
+    - [x] Add Custom GPT setup guide to `walkthrough.md` <!-- id: 48 -->
+    - [x] Create `chatgpt_system_prompt.md` for Custom GPT instructions <!-- id: 51 -->
+- [x] Advanced English Examples <!-- id: 49 -->
+    - [x] Translate advanced scenarios from `examples_pt.md` to `examples.md` <!-- id: 50 -->
+- [x] Social Media <!-- id: 52 -->
+    - [x] Create LinkedIn post draft (`linkedin_post.md`) <!-- id: 53 -->
+- [x] Guardrails & Safety <!-- id: 54 -->
+    - [x] Implement `FCCS_READ_ONLY` mode in config <!-- id: 55 -->
+    - [x] Add "Critical Action" middleware in `src/index.ts` <!-- id: 56 -->
+    - [x] Add "Critical Action" middleware in `src/index.ts` <!-- id: 56 -->
+    - [x] Update `chatgpt_system_prompt.md` with safety instructions <!-- id: 57 -->
+- [x] Hallucination Prevention <!-- id: 58 -->
+    - [x] Update system prompt with strict tool usage rules <!-- id: 59 -->
+    - [x] Create `hallucination_prevention.md` explanation <!-- id: 60 -->
